@@ -93,8 +93,16 @@ void BraveLvkaiAudioProcessor::changeProgramName (int index, const juce::String&
 //==============================================================================
 void BraveLvkaiAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
 {
-    // Use this method as the place to do any pre-playback
-    // initialisation that you need..
+    oversampling->reset();
+    oversampling->initProcessing(static_cast<size_t> (samplesPerBlock));
+
+    juce::dsp::ProcessSpec spec;
+    spec.maximumBlockSize = samplesPerBlock * 3;
+    spec.sampleRate = sampleRate * 4;
+    spec.numChannels = getTotalNumOutputChannels();
+    highPass.prepare(spec);
+    lowPass.prepare(spec);
+    compressor.prepare(spec);
 }
 
 void BraveLvkaiAudioProcessor::releaseResources()
@@ -135,27 +143,136 @@ void BraveLvkaiAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, j
     auto totalNumInputChannels  = getTotalNumInputChannels();
     auto totalNumOutputChannels = getTotalNumOutputChannels();
 
-    // In case we have more outputs than inputs, this code clears any output
-    // channels that didn't contain input data, (because these aren't
-    // guaranteed to be empty - they may contain garbage).
-    // This is here to avoid people getting screaming feedback
-    // when they first compile a plugin, but obviously you don't need to keep
-    // this code if your algorithm always overwrites all the output channels.
+    //define parameters in relation to the audio processor value tree state
+    float highPassCutoff = *apvts.getRawParameterValue("HighPassCutoff");
+    float lowPassCutoff = *apvts.getRawParameterValue("LowPassCutoff");
+    float drive = *apvts.getRawParameterValue("DRIVE");
+    float dryWet = *apvts.getRawParameterValue("DRYWET");
+    float volume = *apvts.getRawParameterValue("VOLUME");
+    float distortionType = *apvts.getRawParameterValue("DISTORTIONTYPE");
+    bool makeupGainEngaged = *apvts.getRawParameterValue("AUTOMAKEUPGAIN");
+
+    //FILTER
+    highPass.setCutoffFrequency(highPassCutoff);
+    lowPass.setCutoffFrequency(lowPassCutoff);
+    highPass.setType(juce::dsp::StateVariableTPTFilterType::highpass);
+    lowPass.setType(juce::dsp::StateVariableTPTFilterType::lowpass);
+
+    //COMPRESSOR
+    compressor.setAttack(10.0f);
+    compressor.setRelease(50.0f);
+    compressor.setRatio(4.0f);
+    compressor.setThreshold(-4.0f);
+
+    //OVERSAMPLING
+    juce::dsp::AudioBlock<float> blockInput(buffer);
+    juce::dsp::AudioBlock<float> blockOuput = oversampling->processSamplesUp(blockInput);
+
     for (auto i = totalNumInputChannels; i < totalNumOutputChannels; ++i)
-        buffer.clear (i, 0, buffer.getNumSamples());
+        buffer.clear(i, 0, buffer.getNumSamples());
 
-    // This is the place where you'd normally do the guts of your plugin's
-    // audio processing...
-    // Make sure to reset the state if your inner loop is processing
-    // the samples and the outer loop is handling the channels.
-    // Alternatively, you can process the samples with the channels
-    // interleaved by keeping the same state.
-    for (int channel = 0; channel < totalNumInputChannels; ++channel)
+    auto audioBlock = juce::dsp::AudioBlock<float>(buffer);
+    auto context = juce::dsp::ProcessContextReplacing<float>(blockOuput);
+    highPass.process(context);
+    lowPass.process(context);
+
+    //Messy ass signal processing block because it was my first coded plugin 8^/
+    for (int channel = 0; channel < blockOuput.getNumChannels(); channel++)
     {
-        auto* channelData = buffer.getWritePointer (channel);
+        for (int sample = 0; sample < blockOuput.getNumSamples(); sample++)
+        {
+            float in = blockOuput.getSample(channel, sample);
+            float cleanSig = in;
 
-        // ..do something to the data...
+            //Distortion Type
+            //Input Gain (Not for Full wave and Half wave rectifier)
+            if (distortionType == 1 || distortionType == 2 || distortionType == 3 || distortionType == 4 || distortionType == 5)
+            {
+                in *= drive;
+            }
+            float out;
+            if (distortionType == 1)
+            {
+                // Simple hard clipping
+                float threshold = 1.0f;
+                if (in > threshold)
+                    out = threshold;
+                else if (in < -threshold)
+                    out = -threshold;
+                else
+                    out = in;
+            }
+            else if (distortionType == 2)
+            {
+                // Soft clipping based on quadratic function
+                float threshold1 = 1.0f / 3.0f;
+                float threshold2 = 2.0f / 3.0f;
+                if (in > threshold2)
+                    out = 1.0f;
+                else if (in > threshold1)
+                    out = (3.0f - (2.0f - 3.0f * in) *
+                        (2.0f - 3.0f * in)) / 3.0f;
+                else if (in < -threshold2)
+                    out = -1.0f;
+                else if (in < -threshold1)
+                    out = -(3.0f - (2.0f + 3.0f * in) *
+                        (2.0f + 3.0f * in)) / 3.0f;
+                else
+                    out = 2.0f * in;
+            }
+            else if (distortionType == 3)
+            {
+                // Soft clipping based on exponential function
+                if (in > 0)
+                    out = 1.0f - expf(-in);
+                else
+                    out = -1.0f + expf(in);
+
+                out = out * 1.5f;
+            }
+            else if (distortionType == 4)
+            {
+                // ArcTan
+                out = (2.0f / juce::MathConstants<float>::pi) * atan(in);
+            }
+            else if (distortionType == 5)
+            {
+                // tubeIsh Distortion
+
+                out = compressor.processSample(channel, in);
+
+                out = juce::dsp::FastMathApproximations::tanh(out);
+                float x = out * 0.25;
+                float a = abs(x);
+                float x2 = x * x;
+                float y = 1 - 1 / (1 + a + x2 + 0.66422417311781 * x2 * a + 0.36483285408241 * x2 * x2);
+                if (x >= 0)
+                {
+                    out = y;
+                }
+                else
+                {
+                    out = -y;
+                }
+                out = out * 3.0f;
+            }
+            out = (((out * (dryWet / 100.0f)) + (cleanSig * (1.0f - (dryWet / 100.0f)))) * juce::Decibels::decibelsToGain(volume));
+
+            if (makeupGainEngaged)
+            {
+                //Automatic Gain Comp
+                makeUpGain = pow(drive, 0.65);
+                out /= makeUpGain;
+                blockOuput.setSample(channel, sample, out);
+            }
+
+            else
+            {
+                blockOuput.setSample(channel, sample, out);
+            }
+        }
     }
+    oversampling->processSamplesDown(blockInput);
 }
 
 //==============================================================================
@@ -181,6 +298,51 @@ void BraveLvkaiAudioProcessor::setStateInformation (const void* data, int sizeIn
 {
     // You should use this method to restore your parameters from this memory block,
     // whose contents will have been created by the getStateInformation() call.
+}
+
+juce::AudioProcessorValueTreeState::ParameterLayout BraveLvkaiAudioProcessor::createParameterLayout()
+{
+    APVTS::ParameterLayout layout;
+
+    using namespace juce;
+
+    layout.add(std::make_unique<AudioParameterFloat>(ParameterID{ "HighPassCutoff", 1 },
+        "HighPassCutoff",
+        NormalisableRange<float>(20, 5000, 1, 1), 20));
+    layout.add(std::make_unique<AudioParameterFloat>(ParameterID{ "LowPassCutoff", 1 },
+        "LowPassCutoff",
+        NormalisableRange<float>(100, 20000, 1, 1), 20000));
+    layout.add(std::make_unique<AudioParameterFloat>(ParameterID{ "Drive", 1 },
+        "Drive",
+        NormalisableRange<float>(1.f, 25.f, 1.f, 1.f), 1.f));
+    layout.add(std::make_unique<AudioParameterFloat>(ParameterID{ "DryWet", 1 },
+        "DryWet",
+        NormalisableRange<float>(1.f, 100.f, 1.f, 1.f), 100.f));
+    layout.add(std::make_unique<AudioParameterFloat>(ParameterID{ "Volume", 1 },
+        "Volume",
+        NormalisableRange<float>(100, 20000, 1, 1), 20000));
+
+    layout.add(std::make_unique<AudioParameterFloat>(ParameterID{ "Threshold", 1 },
+        "Threshold",
+        NormalisableRange<float>(-60, 12, 1, 1), 0));
+
+
+    auto attackReleaseRange = NormalisableRange<float>(0, 500, 1, 1);
+
+    layout.add(std::make_unique<AudioParameterFloat>(ParameterID{ "Attack", 1 }, "Attack", attackReleaseRange, 50));
+
+    layout.add(std::make_unique<AudioParameterFloat>(ParameterID{ "Release", 1 }, "Release", attackReleaseRange, 250));
+
+    auto choices = std::vector<double>{ 1.5, 2, 3, 4, 5, 6, 7, 8, 10, 15, 20, 50, 100 };
+    juce::StringArray sa;
+    for (auto choice : choices)
+    {
+        sa.add(juce::String(choice));
+    }
+
+    layout.add(std::make_unique<AudioParameterChoice>(ParameterID{ "Ratio", 1 }, "Ratio", sa, 3));
+
+    return layout;
 }
 
 //==============================================================================

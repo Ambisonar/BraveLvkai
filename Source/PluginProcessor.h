@@ -56,7 +56,18 @@ public:
     void getStateInformation (juce::MemoryBlock& destData) override;
     void setStateInformation (const void* data, int sizeInBytes) override;
 
+    using APVTS = juce::AudioProcessorValueTreeState;
+    static APVTS::ParameterLayout createParameterLayout();
+
+    APVTS apvts{ *this, nullptr, "Parameters", createParameterLayout() };
+
 private:
+    std::unique_ptr<juce::dsp::Oversampling<float>> oversampling;
+    juce::dsp::StateVariableTPTFilter<float> highPass;
+    juce::dsp::StateVariableTPTFilter<float> lowPass;
+    juce::dsp::Compressor<float> compressor;
+
+    double makeUpGain;
     //==============================================================================
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (BraveLvkaiAudioProcessor)
 };
