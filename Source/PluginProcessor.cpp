@@ -22,6 +22,7 @@ BraveLvkaiAudioProcessor::BraveLvkaiAudioProcessor()
                        )
 #endif
 {
+    oversampling.reset(new juce::dsp::Oversampling<float>(2, 2, juce::dsp::Oversampling<float>::filterHalfBandPolyphaseIIR, false));
 }
 
 BraveLvkaiAudioProcessor::~BraveLvkaiAudioProcessor()
@@ -103,6 +104,15 @@ void BraveLvkaiAudioProcessor::prepareToPlay (double sampleRate, int samplesPerB
     highPass.prepare(spec);
     lowPass.prepare(spec);
     compressor.prepare(spec);
+
+    juce::dsp::ProcessSpec specConvolver;
+    specConvolver.maximumBlockSize = samplesPerBlock;
+    specConvolver.sampleRate = sampleRate;
+    specConvolver.numChannels = getTotalNumOutputChannels();
+    convolver.prepare(specConvolver);
+    convolver.reset();
+    recDryWetMixer.prepare(specConvolver);
+    recDryWetMixer.reset();
 }
 
 void BraveLvkaiAudioProcessor::releaseResources()
@@ -144,27 +154,28 @@ void BraveLvkaiAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, j
     auto totalNumOutputChannels = getTotalNumOutputChannels();
 
     //define parameters in relation to the audio processor value tree state
-    float highPassCutoff = *apvts.getRawParameterValue("HighPassCutoff");
-    float lowPassCutoff = *apvts.getRawParameterValue("LowPassCutoff");
-    float drive = *apvts.getRawParameterValue("DRIVE");
-    float dryWet = *apvts.getRawParameterValue("DRYWET");
-    float volume = *apvts.getRawParameterValue("VOLUME");
-    float distortionType = *apvts.getRawParameterValue("DISTORTIONTYPE");
-    bool makeupGainEngaged = *apvts.getRawParameterValue("AUTOMAKEUPGAIN");
+    float highPassFreq = *apvts.getRawParameterValue("HighPassFreq");
+    float lowPassFreq = *apvts.getRawParameterValue("LowPassFreq");
+    float drive = *apvts.getRawParameterValue("Drive");
+    float satDryWet = *apvts.getRawParameterValue("SatDryWet");
+    float volume = *apvts.getRawParameterValue("Volume");
+    float distortionType = *apvts.getRawParameterValue("DistortionType");
+    //bool makeupGainEngaged = *apvts.getRawParameterValue("AUTOMAKEUPGAIN");
+    float revDryWet = *apvts.getRawParameterValue("RevDryWet");
 
-    //FILTER
-    highPass.setCutoffFrequency(highPassCutoff);
-    lowPass.setCutoffFrequency(lowPassCutoff);
+    // Filter
+    highPass.setCutoffFrequency(highPassFreq);
+    lowPass.setCutoffFrequency(lowPassFreq);
     highPass.setType(juce::dsp::StateVariableTPTFilterType::highpass);
     lowPass.setType(juce::dsp::StateVariableTPTFilterType::lowpass);
 
-    //COMPRESSOR
+    // Compressor
     compressor.setAttack(10.0f);
     compressor.setRelease(50.0f);
     compressor.setRatio(4.0f);
     compressor.setThreshold(-4.0f);
 
-    //OVERSAMPLING
+    // OverSampling
     juce::dsp::AudioBlock<float> blockInput(buffer);
     juce::dsp::AudioBlock<float> blockOuput = oversampling->processSamplesUp(blockInput);
 
@@ -184,13 +195,13 @@ void BraveLvkaiAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, j
             float in = blockOuput.getSample(channel, sample);
             float cleanSig = in;
 
-            //Distortion Type
-            //Input Gain (Not for Full wave and Half wave rectifier)
+            // Distortion Type
+            // Input Gain (Not for Full wave and Half wave rectifier)
             if (distortionType == 1 || distortionType == 2 || distortionType == 3 || distortionType == 4 || distortionType == 5)
             {
                 in *= drive;
             }
-            float out;
+            float out = 0.0f;
             if (distortionType == 1)
             {
                 // Simple hard clipping
@@ -238,7 +249,6 @@ void BraveLvkaiAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, j
             else if (distortionType == 5)
             {
                 // tubeIsh Distortion
-
                 out = compressor.processSample(channel, in);
 
                 out = juce::dsp::FastMathApproximations::tanh(out);
@@ -256,23 +266,28 @@ void BraveLvkaiAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, j
                 }
                 out = out * 3.0f;
             }
-            out = (((out * (dryWet / 100.0f)) + (cleanSig * (1.0f - (dryWet / 100.0f)))) * juce::Decibels::decibelsToGain(volume));
+            out = (((out * (satDryWet / 100.0f)) + (cleanSig * (1.0f - (satDryWet / 100.0f)))) * juce::Decibels::decibelsToGain(volume));
 
-            if (makeupGainEngaged)
-            {
-                //Automatic Gain Comp
-                makeUpGain = pow(drive, 0.65);
-                out /= makeUpGain;
-                blockOuput.setSample(channel, sample, out);
-            }
+            //if (makeupGainEngaged)
+            //{
+            //    //Automatic Gain Comp
+            //    makeUpGain = pow(drive, 0.65);
+            //    out /= makeUpGain;
+            //    blockOuput.setSample(channel, sample, out);
+            //}
 
-            else
+            //else
             {
                 blockOuput.setSample(channel, sample, out);
             }
         }
     }
     oversampling->processSamplesDown(blockInput);
+
+    recDryWetMixer.setWetMixProportion(revDryWet / 100.0f);
+    recDryWetMixer.pushDrySamples(blockInput);
+    convolver.process(juce::dsp::ProcessContextReplacing<float>(blockInput));
+    recDryWetMixer.mixWetSamples(blockInput);
 }
 
 //==============================================================================
@@ -284,6 +299,7 @@ bool BraveLvkaiAudioProcessor::hasEditor() const
 juce::AudioProcessorEditor* BraveLvkaiAudioProcessor::createEditor()
 {
     return new BraveLvkaiAudioProcessorEditor (*this);
+    //return new juce::GenericAudioProcessorEditor(*this);
 }
 
 //==============================================================================
@@ -300,47 +316,129 @@ void BraveLvkaiAudioProcessor::setStateInformation (const void* data, int sizeIn
     // whose contents will have been created by the getStateInformation() call.
 }
 
+void BraveLvkaiAudioProcessor::setIRBufferSize(int newNumChannels, int newNumSamples, bool keepExistingContent, bool clearExtraSpace, bool avoidReallocating)
+{
+    originalIRBuffer.setSize(newNumChannels, newNumSamples, keepExistingContent, clearExtraSpace, avoidReallocating);
+}
+
+juce::AudioBuffer<float>& BraveLvkaiAudioProcessor::getOriginalIR()
+{
+    return originalIRBuffer;
+}
+
+juce::AudioBuffer<float>& BraveLvkaiAudioProcessor::getModifiedIR()
+{
+    return modifiedIRBuffer;
+}
+
+void BraveLvkaiAudioProcessor::loadImpulseResponse()
+{
+    // 对IR信号进行归一化
+    float globalMaxMagnitude = originalIRBuffer.getMagnitude(0, originalIRBuffer.getNumSamples());
+    originalIRBuffer.applyGain(1.0f / (globalMaxMagnitude + 0.01));
+
+    // 裁剪IR前后的空白or噪声部分
+    int numSamples = originalIRBuffer.getNumSamples();
+    int blockSize = static_cast<int>(std::floor(this->getSampleRate()) / 100);
+    int startBlockNum = 0;
+    int endBlockNum = numSamples / blockSize;
+
+    // 找到IR信号中第一个大于0.001的样本
+    float localMaxMagnitude = 0.0f;
+    while ((startBlockNum + 1) * blockSize < numSamples)
+    {
+        localMaxMagnitude = originalIRBuffer.getMagnitude(startBlockNum * blockSize, blockSize);
+        if (localMaxMagnitude > 0.001)
+        {
+            break;
+        }
+        ++startBlockNum;
+    }
+
+    // 找到IR信号中最后一个大于0.001的样本
+    localMaxMagnitude = 0.0f;
+    while ((endBlockNum - 1) * blockSize > 0)
+    {
+        --endBlockNum;
+        localMaxMagnitude = originalIRBuffer.getMagnitude(endBlockNum * blockSize, blockSize);
+        // find the time to decay by 60 dB (T60)
+        if (localMaxMagnitude > 0.001)
+        {
+            break;
+        }
+    }
+
+    // 计算裁剪后的IR信号长度
+    int trimmedNumSamples;
+    // 如果尾部有裁剪
+    if (endBlockNum * blockSize < numSamples)
+    {
+        trimmedNumSamples = (endBlockNum - startBlockNum) * blockSize - 1;
+    }
+    else
+    {
+        trimmedNumSamples = numSamples - startBlockNum * blockSize;
+    }
+
+    // 重新定义IR的Buffer大小
+    modifiedIRBuffer.setSize(originalIRBuffer.getNumChannels(), trimmedNumSamples, false, true, false);
+    // 平移samples
+    for (int channel = 0; channel < originalIRBuffer.getNumChannels(); ++channel)
+    {
+        for (int sample = 0; sample < trimmedNumSamples; ++sample)
+        {
+            modifiedIRBuffer.setSample(channel, sample, originalIRBuffer.getSample(channel, sample + startBlockNum * blockSize));
+        }
+    }
+
+    // 复制回originalIRBuffer
+    originalIRBuffer.makeCopyOf(modifiedIRBuffer);
+
+    // 设置decay time
+    //auto decayTimeParam = apvts.getParameter("DecayTime");
+    //double decayTime = static_cast<double>(trimmedNumSamples) / this->getSampleRate();
+    //decayTimeParam->beginChangeGesture();
+    //decayTimeParam->setValueNotifyingHost(
+    //    decayTimeParam->convertTo0to1(decayTime));
+    //decayTimeParam->endChangeGesture();
+
+    updateImpulseResponse(modifiedIRBuffer);
+}
+
+void BraveLvkaiAudioProcessor::updateImpulseResponse(juce::AudioBuffer<float> irBuffer)
+{
+    convolver.loadImpulseResponse(std::move(irBuffer), this->getSampleRate(), juce::dsp::Convolution::Stereo::yes, juce::dsp::Convolution::Trim::no, juce::dsp::Convolution::Normalise::yes);
+}
+
 juce::AudioProcessorValueTreeState::ParameterLayout BraveLvkaiAudioProcessor::createParameterLayout()
 {
     APVTS::ParameterLayout layout;
 
     using namespace juce;
 
-    layout.add(std::make_unique<AudioParameterFloat>(ParameterID{ "HighPassCutoff", 1 },
-        "HighPassCutoff",
+    layout.add(std::make_unique<AudioParameterFloat>(ParameterID{ "HighPassFreq", 1 },
+        "HighPassFreq",
         NormalisableRange<float>(20, 5000, 1, 1), 20));
-    layout.add(std::make_unique<AudioParameterFloat>(ParameterID{ "LowPassCutoff", 1 },
-        "LowPassCutoff",
+    layout.add(std::make_unique<AudioParameterFloat>(ParameterID{ "LowPassFreq", 1 },
+        "LowPassFreq",
         NormalisableRange<float>(100, 20000, 1, 1), 20000));
     layout.add(std::make_unique<AudioParameterFloat>(ParameterID{ "Drive", 1 },
         "Drive",
         NormalisableRange<float>(1.f, 25.f, 1.f, 1.f), 1.f));
-    layout.add(std::make_unique<AudioParameterFloat>(ParameterID{ "DryWet", 1 },
-        "DryWet",
+    layout.add(std::make_unique<AudioParameterFloat>(ParameterID{ "SatDryWet", 1 },
+        "SatDryWet",
         NormalisableRange<float>(1.f, 100.f, 1.f, 1.f), 100.f));
     layout.add(std::make_unique<AudioParameterFloat>(ParameterID{ "Volume", 1 },
         "Volume",
-        NormalisableRange<float>(100, 20000, 1, 1), 20000));
+        NormalisableRange<float>(-20.f, 20.f, 0.1f, 1.f), 0.f));
+    layout.add(std::make_unique<juce::AudioParameterInt>("DistortionType", "DistortionType", 1, 5, 1));
+    //layout.add(std::make_unique<AudioParameterFloat>(ParameterID{ "DistortionType", 1 },
+    //    "DistortionType",
+    //    NormalisableRange<float>(1.f, 5.f, 1.f, 1.f), 1.f));
 
-    layout.add(std::make_unique<AudioParameterFloat>(ParameterID{ "Threshold", 1 },
-        "Threshold",
-        NormalisableRange<float>(-60, 12, 1, 1), 0));
-
-
-    auto attackReleaseRange = NormalisableRange<float>(0, 500, 1, 1);
-
-    layout.add(std::make_unique<AudioParameterFloat>(ParameterID{ "Attack", 1 }, "Attack", attackReleaseRange, 50));
-
-    layout.add(std::make_unique<AudioParameterFloat>(ParameterID{ "Release", 1 }, "Release", attackReleaseRange, 250));
-
-    auto choices = std::vector<double>{ 1.5, 2, 3, 4, 5, 6, 7, 8, 10, 15, 20, 50, 100 };
-    juce::StringArray sa;
-    for (auto choice : choices)
-    {
-        sa.add(juce::String(choice));
-    }
-
-    layout.add(std::make_unique<AudioParameterChoice>(ParameterID{ "Ratio", 1 }, "Ratio", sa, 3));
+    layout.add(std::make_unique<AudioParameterFloat>(ParameterID{ "RevDryWet", 1 },
+        "RevDryWet",
+        NormalisableRange<float>(1.f, 100.f, 1.f, 1.f), 100.f));
 
     return layout;
 }

@@ -4,6 +4,8 @@
               addUsingNamespaceToJuceHeader="0" displaySplashScreen="1" jucerFormatVersion="1">
   <MAINGROUP id="Zm6v1k" name="BraveLvkai">
     <GROUP id="{D6215A89-86C9-F357-2DF2-517A8765738A}" name="Source">
+      <FILE id="GvU5Ya" name="CustomStyle.cpp" compile="1" resource="0" file="Source/CustomStyle.cpp"/>
+      <FILE id="BymRNK" name="CustomStyle.h" compile="0" resource="0" file="Source/CustomStyle.h"/>
       <FILE id="s4eRnT" name="PluginProcessor.cpp" compile="1" resource="0"
             file="Source/PluginProcessor.cpp"/>
       <FILE id="q17WAa" name="PluginProcessor.h" compile="0" resource="0"

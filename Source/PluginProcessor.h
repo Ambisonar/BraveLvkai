@@ -56,6 +56,15 @@ public:
     void getStateInformation (juce::MemoryBlock& destData) override;
     void setStateInformation (const void* data, int sizeInBytes) override;
 
+    void setIRBufferSize(int newNumChannels, int newNumSamples,
+        bool keepExistingContent = false,
+        bool clearExtraSpace = false,
+        bool avoidReallocating = false);
+    juce::AudioBuffer<float>& getOriginalIR();
+    juce::AudioBuffer<float>& getModifiedIR();
+    void loadImpulseResponse();
+    void updateImpulseResponse(juce::AudioBuffer<float> irBuffer);
+
     using APVTS = juce::AudioProcessorValueTreeState;
     static APVTS::ParameterLayout createParameterLayout();
 
@@ -66,6 +75,11 @@ private:
     juce::dsp::StateVariableTPTFilter<float> highPass;
     juce::dsp::StateVariableTPTFilter<float> lowPass;
     juce::dsp::Compressor<float> compressor;
+
+    juce::dsp::Convolution convolver;
+    juce::AudioBuffer<float> originalIRBuffer;
+    juce::AudioBuffer<float> modifiedIRBuffer;
+    juce::dsp::DryWetMixer<float> recDryWetMixer;
 
     double makeUpGain;
     //==============================================================================
