@@ -15,7 +15,7 @@ BraveLvkaiAudioProcessorEditor::BraveLvkaiAudioProcessorEditor (BraveLvkaiAudioP
 {
     // Make sure that before the constructor has finished, you've set the
     // editor's size to whatever you need it to be.
-    setSize (750, 300);
+    setSize (900, 400);
     juce::LookAndFeel::setDefaultLookAndFeel(&customStyle);
 
     // set AudioFormatManager for reading IR file
@@ -60,6 +60,10 @@ void BraveLvkaiAudioProcessorEditor::paint (juce::Graphics& g)
 {
     g.fillAll(juce::Colour::fromRGB(252, 248, 237));
     g.setFont(32.0f);
+
+    // 将伟大吕凯作为背景图
+    juce::Image background = juce::ImageCache::getFromMemory(BinaryData::GoldenHall_png, BinaryData::GoldenHall_pngSize);
+    g.drawImageAt(background, 0, 0);
     
     if (shouldPaintWaveform == true) {
         const int waveformWidth = 80 * 3;
