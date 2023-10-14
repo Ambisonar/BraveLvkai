@@ -15,7 +15,7 @@ BraveLvkaiAudioProcessorEditor::BraveLvkaiAudioProcessorEditor (BraveLvkaiAudioP
 {
     // Make sure that before the constructor has finished, you've set the
     // editor's size to whatever you need it to be.
-    setSize (900, 400);
+    setSize (800, 400);
     juce::LookAndFeel::setDefaultLookAndFeel(&customStyle);
 
     // set AudioFormatManager for reading IR file
@@ -66,7 +66,7 @@ void BraveLvkaiAudioProcessorEditor::paint (juce::Graphics& g)
     g.drawImageAt(background, 0, 0);
 
     juce::Image mrLin = juce::ImageCache::getFromMemory(BinaryData::MrLin_png, BinaryData::MrLin_pngSize);
-    g.drawImageAt(mrLin, 400, 120);
+    g.drawImageAt(mrLin, 350, 200);
 
     //g.setColour(juce::Colour::fromRGB(111, 76, 91));
     //g.drawFittedText("Naive Instruments", getWidth() - 250 - 15, 15, 250, 20, juce::Justification::centred, 1);
@@ -112,7 +112,7 @@ void BraveLvkaiAudioProcessorEditor::resized()
     const int dialWidth = 80;
     const int dialHeight = 90;
 
-    openIRFileButton.setBounds(leftRightMargin + 30, topBottomMargin + 40, dialWidth * 3, 40);
+    openIRFileButton.setBounds(leftRightMargin + 27, topBottomMargin + 17, dialWidth * 3 - 20, 40);
     irFileLabel.setBounds(leftRightMargin + 30, topBottomMargin + 85, dialWidth * 3, 20);
 
     revDryWetSlider.setBounds(leftRightMargin + dialWidth - 6, getHeight() - topBottomMargin - dialHeight, dialWidth, dialHeight);
