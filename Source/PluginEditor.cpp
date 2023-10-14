@@ -29,25 +29,25 @@ BraveLvkaiAudioProcessorEditor::BraveLvkaiAudioProcessorEditor (BraveLvkaiAudioP
     irFileLabel.setJustificationType(juce::Justification::centredLeft);
 
     createSlider(highPassFreqSlider, " Hz");
-    createLabel(highPassFreqLabel, "HighPassFreq", &highPassFreqSlider);
+    createLabel(highPassFreqLabel, "HighPass", &highPassFreqSlider);
     highPassFreqSliderAttachment = std::make_unique<APVTS::SliderAttachment>(audioProcessor.apvts, "HighPassFreq", highPassFreqSlider);
     createSlider(lowPassFreqSlider, " Hz");
-    createLabel(lowPassFreqLabel, "LowFreq", &lowPassFreqSlider);
+    createLabel(lowPassFreqLabel, "LowPass", &lowPassFreqSlider);
     lowPassFreqSliderAttachment = std::make_unique<APVTS::SliderAttachment>(audioProcessor.apvts, "LowPassFreq", lowPassFreqSlider);
     createSlider(driveSlider, "");
-    createLabel(driveLabel, "Drive", &driveSlider);
+    createLabel(driveLabel, "", &driveSlider);
     driveSliderAttachment = std::make_unique<APVTS::SliderAttachment>(audioProcessor.apvts, "Drive", driveSlider);
     createSlider(satDryWetSlider, " %");
-    createLabel(satDryWetLabel, "SatDryWet", &satDryWetSlider);
+    createLabel(satDryWetLabel, "", &satDryWetSlider);
     satDryWetSliderAttachment = std::make_unique<APVTS::SliderAttachment>(audioProcessor.apvts, "SatDryWet", satDryWetSlider);
     createSlider(volumeSlider, " dB");
-    createLabel(volumeLabel, "Volume", &volumeSlider);
+    createLabel(volumeLabel, "", &volumeSlider);
     volumeSliderAttachment = std::make_unique<APVTS::SliderAttachment>(audioProcessor.apvts, "Volume", volumeSlider);
     createSlider(distortionTypeSlider, "");
-    createLabel(distortionTypeLabel, "DistortionType", &distortionTypeSlider);
+    createLabel(distortionTypeLabel, "", &distortionTypeSlider);
     distortionTypeSliderAttachment = std::make_unique<APVTS::SliderAttachment>(audioProcessor.apvts, "DistortionType", distortionTypeSlider);
     createSlider(revDryWetSlider, " %");
-    createLabel(revDryWetLabel, "RevDryWet", &revDryWetSlider);
+    createLabel(revDryWetLabel, "", &revDryWetSlider);
     revDryWetSliderAttachment = std::make_unique<APVTS::SliderAttachment>(audioProcessor.apvts, "RevDryWet", revDryWetSlider);
 }
 
@@ -64,6 +64,12 @@ void BraveLvkaiAudioProcessorEditor::paint (juce::Graphics& g)
     // 将伟大吕凯作为背景图
     juce::Image background = juce::ImageCache::getFromMemory(BinaryData::GoldenHall_png, BinaryData::GoldenHall_pngSize);
     g.drawImageAt(background, 0, 0);
+
+    juce::Image mrLin = juce::ImageCache::getFromMemory(BinaryData::MrLin_png, BinaryData::MrLin_pngSize);
+    g.drawImageAt(mrLin, 400, 120);
+
+    //g.setColour(juce::Colour::fromRGB(111, 76, 91));
+    //g.drawFittedText("Naive Instruments", getWidth() - 250 - 15, 15, 250, 20, juce::Justification::centred, 1);
     
     if (shouldPaintWaveform == true) {
         const int waveformWidth = 80 * 3;
@@ -88,7 +94,7 @@ void BraveLvkaiAudioProcessorEditor::paint (juce::Graphics& g)
         }
         for (int xPos = 0; xPos < waveformValues.size(); ++xPos)
         {
-            auto yPos = juce::jmap<float>(waveformValues[xPos], -72.0f, 0.0f, waveformHeight + 60, 60);
+            auto yPos = juce::jmap<float>(waveformValues[xPos], -72.0f, 0.0f, waveformHeight + 110, 100);
             waveformPath.lineTo(15 + xPos / waveformResolution * waveformWidth, yPos);
         }
 
@@ -106,16 +112,16 @@ void BraveLvkaiAudioProcessorEditor::resized()
     const int dialWidth = 80;
     const int dialHeight = 90;
 
-    openIRFileButton.setBounds(leftRightMargin, topBottomMargin, dialWidth * 3, 40);
-    irFileLabel.setBounds(leftRightMargin, topBottomMargin + 45, dialWidth * 3, 20);
+    openIRFileButton.setBounds(leftRightMargin + 30, topBottomMargin + 40, dialWidth * 3, 40);
+    irFileLabel.setBounds(leftRightMargin + 30, topBottomMargin + 85, dialWidth * 3, 20);
 
-    revDryWetSlider.setBounds(leftRightMargin + dialWidth * 2, getHeight() - topBottomMargin - dialHeight, dialWidth, dialHeight);
+    revDryWetSlider.setBounds(leftRightMargin + dialWidth - 6, getHeight() - topBottomMargin - dialHeight, dialWidth, dialHeight);
 
-    highPassFreqSlider.setBounds(getWidth() - leftRightMargin - dialWidth * 3, topBottomMargin + dialHeight / 3 * 2, dialWidth, dialHeight);
-    lowPassFreqSlider.setBounds(getWidth() - leftRightMargin - dialWidth * 3, getHeight() - topBottomMargin - dialHeight, dialWidth, dialHeight);
-    driveSlider.setBounds(getWidth() - leftRightMargin - dialWidth * 2, topBottomMargin + dialHeight / 3 * 2, dialWidth, dialHeight);
-    satDryWetSlider.setBounds(getWidth() - leftRightMargin - dialWidth * 2, getHeight() - topBottomMargin - dialHeight, dialWidth, dialHeight);
-    volumeSlider.setBounds(getWidth() - leftRightMargin - dialWidth, topBottomMargin + dialHeight / 3 * 2, dialWidth, dialHeight);
+    /*highPassFreqSlider.setBounds(getWidth() - leftRightMargin - dialWidth * 3, getHeight() - 3 * topBottomMargin - 2 * dialHeight, dialWidth, dialHeight);
+    lowPassFreqSlider.setBounds(getWidth() - leftRightMargin - dialWidth * 2, getHeight() - 3 * topBottomMargin - 2 * dialHeight, dialWidth, dialHeight);*/
+    driveSlider.setBounds(getWidth() - 4 * leftRightMargin - dialWidth * 2 + 5, getHeight() - 3 * topBottomMargin - 3 * dialHeight, 2 * dialWidth, 2 * dialHeight);
+    satDryWetSlider.setBounds(getWidth() - leftRightMargin - dialWidth * 3, getHeight() - topBottomMargin - dialHeight, dialWidth, dialHeight);
+    volumeSlider.setBounds(getWidth() - leftRightMargin - dialWidth * 2, getHeight() - topBottomMargin - dialHeight, dialWidth, dialHeight);
     distortionTypeSlider.setBounds(getWidth() - leftRightMargin - dialWidth, getHeight() - topBottomMargin - dialHeight, dialWidth, dialHeight);
 }
 

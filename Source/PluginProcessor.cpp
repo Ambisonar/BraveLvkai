@@ -221,13 +221,11 @@ void BraveLvkaiAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, j
                 if (in > threshold2)
                     out = 1.0f;
                 else if (in > threshold1)
-                    out = (3.0f - (2.0f - 3.0f * in) *
-                        (2.0f - 3.0f * in)) / 3.0f;
+                    out = (3.0f - (2.0f - 3.0f * in) * (2.0f - 3.0f * in)) / 3.0f;
                 else if (in < -threshold2)
                     out = -1.0f;
                 else if (in < -threshold1)
-                    out = -(3.0f - (2.0f + 3.0f * in) *
-                        (2.0f + 3.0f * in)) / 3.0f;
+                    out = -(3.0f - (2.0f + 3.0f * in) * (2.0f + 3.0f * in)) / 3.0f;
                 else
                     out = 2.0f * in;
             }
@@ -333,17 +331,17 @@ juce::AudioBuffer<float>& BraveLvkaiAudioProcessor::getModifiedIR()
 
 void BraveLvkaiAudioProcessor::loadImpulseResponse()
 {
-    // 对IR信号进行归一化
+    // 露脭IR脨脜潞脜陆酶脨脨鹿茅脪禄禄炉
     float globalMaxMagnitude = originalIRBuffer.getMagnitude(0, originalIRBuffer.getNumSamples());
     originalIRBuffer.applyGain(1.0f / (globalMaxMagnitude + 0.01));
 
-    // 裁剪IR前后的空白or噪声部分
+    // 虏脙录么IR脟掳潞贸碌脛驴脮掳脳or脭毛脡霉虏驴路脰
     int numSamples = originalIRBuffer.getNumSamples();
     int blockSize = static_cast<int>(std::floor(this->getSampleRate()) / 100);
     int startBlockNum = 0;
     int endBlockNum = numSamples / blockSize;
 
-    // 找到IR信号中第一个大于0.001的样本
+    // 脮脪碌陆IR脨脜潞脜脰脨碌脷脪禄赂枚麓贸脫脷0.001碌脛脩霉卤戮
     float localMaxMagnitude = 0.0f;
     while ((startBlockNum + 1) * blockSize < numSamples)
     {
@@ -355,7 +353,7 @@ void BraveLvkaiAudioProcessor::loadImpulseResponse()
         ++startBlockNum;
     }
 
-    // 找到IR信号中最后一个大于0.001的样本
+    // 脮脪碌陆IR脨脜潞脜脰脨脳卯潞贸脪禄赂枚麓贸脫脷0.001碌脛脩霉卤戮
     localMaxMagnitude = 0.0f;
     while ((endBlockNum - 1) * blockSize > 0)
     {
@@ -368,9 +366,9 @@ void BraveLvkaiAudioProcessor::loadImpulseResponse()
         }
     }
 
-    // 计算裁剪后的IR信号长度
+    // 录脝脣茫虏脙录么潞贸碌脛IR脨脜潞脜鲁陇露脠
     int trimmedNumSamples;
-    // 如果尾部有裁剪
+    // 脠莽鹿没脦虏虏驴脫脨虏脙录么
     if (endBlockNum * blockSize < numSamples)
     {
         trimmedNumSamples = (endBlockNum - startBlockNum) * blockSize - 1;
@@ -380,9 +378,9 @@ void BraveLvkaiAudioProcessor::loadImpulseResponse()
         trimmedNumSamples = numSamples - startBlockNum * blockSize;
     }
 
-    // 重新定义IR的Buffer大小
+    // 脰脴脨脗露篓脪氓IR碌脛Buffer麓贸脨隆
     modifiedIRBuffer.setSize(originalIRBuffer.getNumChannels(), trimmedNumSamples, false, true, false);
-    // 平移samples
+    // 脝陆脪脝samples
     for (int channel = 0; channel < originalIRBuffer.getNumChannels(); ++channel)
     {
         for (int sample = 0; sample < trimmedNumSamples; ++sample)
@@ -391,10 +389,10 @@ void BraveLvkaiAudioProcessor::loadImpulseResponse()
         }
     }
 
-    // 复制回originalIRBuffer
+    // 赂麓脰脝禄脴originalIRBuffer
     originalIRBuffer.makeCopyOf(modifiedIRBuffer);
 
-    // 设置decay time
+    // 脡猫脰脙decay time
     //auto decayTimeParam = apvts.getParameter("DecayTime");
     //double decayTime = static_cast<double>(trimmedNumSamples) / this->getSampleRate();
     //decayTimeParam->beginChangeGesture();

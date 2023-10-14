@@ -5,7 +5,8 @@
   <MAINGROUP id="Zm6v1k" name="BraveLvkai">
     <GROUP id="{D6215A89-86C9-F357-2DF2-517A8765738A}" name="Source">
       <GROUP id="{0E1B1213-42FE-365E-85DB-57E661198E81}" name="Assets">
-        <FILE id="A3bzJx" name="GoldenHall.png" compile="0" resource="1" file="Source/Assets/GoldenHall.png"/>
+        <FILE id="VGqd6y" name="GoldenHall.png" compile="0" resource="1" file="Source/Assets/GoldenHall.png"/>
+        <FILE id="fLxC70" name="MrLin.png" compile="0" resource="1" file="Source/Assets/MrLin.png"/>
       </GROUP>
       <FILE id="GvU5Ya" name="CustomStyle.cpp" compile="1" resource="0" file="Source/CustomStyle.cpp"/>
       <FILE id="BymRNK" name="CustomStyle.h" compile="0" resource="0" file="Source/CustomStyle.h"/>
