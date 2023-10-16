@@ -10,6 +10,7 @@
 
 #include <JuceHeader.h>
 #include "DSP/NotchFilter.h"
+#include "DSP/Saturation.h"
 
 //==============================================================================
 /**
@@ -72,11 +73,6 @@ public:
     APVTS apvts{ *this, nullptr, "Parameters", createParameterLayout() };
 
 private:
-    std::unique_ptr<juce::dsp::Oversampling<float>> oversampling;
-    juce::dsp::StateVariableTPTFilter<float> highPass;
-    juce::dsp::StateVariableTPTFilter<float> lowPass;
-    juce::dsp::Compressor<float> compressor;
-
     juce::dsp::Convolution convolver;
     juce::AudioBuffer<float> originalIRBuffer;
     juce::AudioBuffer<float> modifiedIRBuffer;
@@ -84,6 +80,7 @@ private:
 
     double makeUpGain;
 
+    Saturation saturation;
 	NotchFilter notchFilter;
     
     //==============================================================================

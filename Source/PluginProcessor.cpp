@@ -22,7 +22,6 @@ BraveLvkaiAudioProcessor::BraveLvkaiAudioProcessor()
                        )
 #endif
 {
-    oversampling.reset(new juce::dsp::Oversampling<float>(2, 2, juce::dsp::Oversampling<float>::filterHalfBandPolyphaseIIR, false));
 }
 
 BraveLvkaiAudioProcessor::~BraveLvkaiAudioProcessor()
@@ -94,21 +93,13 @@ void BraveLvkaiAudioProcessor::changeProgramName (int index, const juce::String&
 //==============================================================================
 void BraveLvkaiAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
 {
-    oversampling->reset();
-    oversampling->initProcessing(static_cast<size_t> (samplesPerBlock));
-
-    juce::dsp::ProcessSpec specOverSampling;
-    specOverSampling.maximumBlockSize = samplesPerBlock * 3;
-    specOverSampling.sampleRate = sampleRate * 4;
-    specOverSampling.numChannels = getTotalNumOutputChannels();
-    highPass.prepare(specOverSampling);
-    lowPass.prepare(specOverSampling);
-    compressor.prepare(specOverSampling);
+    
 
     juce::dsp::ProcessSpec spec;
     spec.maximumBlockSize = samplesPerBlock;
     spec.sampleRate = sampleRate;
     spec.numChannels = getTotalNumOutputChannels();
+    saturation.prepare(spec);
     convolver.prepare(spec);
     convolver.reset();
     recDryWetMixer.prepare(spec);
@@ -161,136 +152,27 @@ void BraveLvkaiAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, j
     float satDryWet = *apvts.getRawParameterValue("SatDryWet");
     float volume = *apvts.getRawParameterValue("Volume");
     float distortionType = *apvts.getRawParameterValue("DistortionType");
-    //bool makeupGainEngaged = *apvts.getRawParameterValue("AUTOMAKEUPGAIN");
     float revDryWet = *apvts.getRawParameterValue("RevDryWet");
-
-    // Filter
-    highPass.setCutoffFrequency(highPassFreq);
-    lowPass.setCutoffFrequency(lowPassFreq);
-    highPass.setType(juce::dsp::StateVariableTPTFilterType::highpass);
-    lowPass.setType(juce::dsp::StateVariableTPTFilterType::lowpass);
-
-    // Compressor
-    compressor.setAttack(10.0f);
-    compressor.setRelease(50.0f);
-    compressor.setRatio(4.0f);
-    compressor.setThreshold(-4.0f);
-
-    // OverSampling
-    juce::dsp::AudioBlock<float> blockInput(buffer);
-    juce::dsp::AudioBlock<float> blockOuput = oversampling->processSamplesUp(blockInput);
 
     for (auto i = totalNumInputChannels; i < totalNumOutputChannels; ++i)
         buffer.clear(i, 0, buffer.getNumSamples());
 
-    auto audioBlock = juce::dsp::AudioBlock<float>(buffer);
-    auto context = juce::dsp::ProcessContextReplacing<float>(blockOuput);
-    highPass.process(context);
-    lowPass.process(context);
+    juce::dsp::AudioBlock<float> block(buffer);
 
-    //Messy ass signal processing block because it was my first coded plugin 8^/
-    for (int channel = 0; channel < blockOuput.getNumChannels(); channel++)
-    {
-        for (int sample = 0; sample < blockOuput.getNumSamples(); sample++)
-        {
-            float in = blockOuput.getSample(channel, sample);
-            float cleanSig = in;
-
-            // Distortion Type
-            // Input Gain (Not for Full wave and Half wave rectifier)
-            if (distortionType == 1 || distortionType == 2 || distortionType == 3 || distortionType == 4 || distortionType == 5)
-            {
-                in *= drive;
-            }
-            float out = 0.0f;
-            if (distortionType == 1)
-            {
-                // Simple hard clipping
-                float threshold = 1.0f;
-                if (in > threshold)
-                    out = threshold;
-                else if (in < -threshold)
-                    out = -threshold;
-                else
-                    out = in;
-            }
-            else if (distortionType == 2)
-            {
-                // Soft clipping based on quadratic function
-                float threshold1 = 1.0f / 3.0f;
-                float threshold2 = 2.0f / 3.0f;
-                if (in > threshold2)
-                    out = 1.0f;
-                else if (in > threshold1)
-                    out = (3.0f - (2.0f - 3.0f * in) * (2.0f - 3.0f * in)) / 3.0f;
-                else if (in < -threshold2)
-                    out = -1.0f;
-                else if (in < -threshold1)
-                    out = -(3.0f - (2.0f + 3.0f * in) * (2.0f + 3.0f * in)) / 3.0f;
-                else
-                    out = 2.0f * in;
-            }
-            else if (distortionType == 3)
-            {
-                // Soft clipping based on exponential function
-                if (in > 0)
-                    out = 1.0f - expf(-in);
-                else
-                    out = -1.0f + expf(in);
-
-                out = out * 1.5f;
-            }
-            else if (distortionType == 4)
-            {
-                // ArcTan
-                out = (2.0f / juce::MathConstants<float>::pi) * atan(in);
-            }
-            else if (distortionType == 5)
-            {
-                // tubeIsh Distortion
-                out = compressor.processSample(channel, in);
-
-                out = juce::dsp::FastMathApproximations::tanh(out);
-                float x = out * 0.25;
-                float a = abs(x);
-                float x2 = x * x;
-                float y = 1 - 1 / (1 + a + x2 + 0.66422417311781 * x2 * a + 0.36483285408241 * x2 * x2);
-                if (x >= 0)
-                {
-                    out = y;
-                }
-                else
-                {
-                    out = -y;
-                }
-                out = out * 3.0f;
-            }
-            out = (((out * (satDryWet / 100.0f)) + (cleanSig * (1.0f - (satDryWet / 100.0f)))) * juce::Decibels::decibelsToGain(volume));
-
-            //if (makeupGainEngaged)
-            //{
-            //    //Automatic Gain Comp
-            //    makeUpGain = pow(drive, 0.65);
-            //    out /= makeUpGain;
-            //    blockOuput.setSample(channel, sample, out);
-            //}
-
-            //else
-            {
-                blockOuput.setSample(channel, sample, out);
-            }
-        }
-    }
-    oversampling->processSamplesDown(blockInput);
+    saturation.distortionType = distortionType;
+    saturation.drive = drive;
+    saturation.mix = satDryWet;
+    saturation.volume = volume;
+    saturation.process(block);
 
     recDryWetMixer.setWetMixProportion(revDryWet / 100.0f);
-    recDryWetMixer.pushDrySamples(blockInput);
-    convolver.process(juce::dsp::ProcessContextReplacing<float>(blockInput));
-    recDryWetMixer.mixWetSamples(blockInput);
+    recDryWetMixer.pushDrySamples(block);
+    convolver.process(juce::dsp::ProcessContextReplacing<float>(block));
+    recDryWetMixer.mixWetSamples(block);
 
-    notchFilter.notchFrequency = 50.0f;
+    /*notchFilter.notchFrequency = 50.0f;
     notchFilter.notchQuality = 0.1f;
-    notchFilter.process(blockInput);
+    notchFilter.process(block);*/
 }
 
 //==============================================================================
