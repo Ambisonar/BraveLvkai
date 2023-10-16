@@ -75,6 +75,7 @@ public:
 				sampleBuffer = new AudioSampleBuffer(bufferChannel, bufferNumOfSamples);
 			}
 			audioBlock->copyTo(*sampleBuffer);
+			
 		}
 	}
 

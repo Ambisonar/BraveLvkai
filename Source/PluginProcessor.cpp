@@ -97,18 +97,9 @@ void BraveLvkaiAudioProcessor::prepareToPlay (double sampleRate, int samplesPerB
     spec.maximumBlockSize = samplesPerBlock;
     spec.sampleRate = sampleRate;
     spec.numChannels = getTotalNumOutputChannels();
-<<<<<<< Updated upstream
     saturation.prepare(spec);
     convolution.prepare(spec);
-=======
-    convolver.prepare(spec);
-    convolver.reset();
-    recDryWetMixer.prepare(spec);
-    recDryWetMixer.reset();
-
-    // Add notch chain here--
->>>>>>> Stashed changes
-    notchFilter.prepare(spec);
+    // notchFilter.prepare(spec);
     vocalBox = new VocalBox();
     vocalBox->prepare(spec, 10);
 }
@@ -173,73 +164,10 @@ void BraveLvkaiAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, j
 
     convolution.mix = revDryWet;
     convolution.process(block);
-
-<<<<<<< Updated upstream
-    /*notchFilter.notchFrequency = 50.0f;
-    notchFilter.notchQuality = 0.1f;
-    notchFilter.process(block);*/
-=======
-                out = out * 1.5f;
-            }
-            else if (distortionType == 4)
-            {
-                // ArcTan
-                out = (2.0f / juce::MathConstants<float>::pi) * atan(in);
-            }
-            else if (distortionType == 5)
-            {
-                // tubeIsh Distortion
-                out = compressor.processSample(channel, in);
-
-                out = juce::dsp::FastMathApproximations::tanh(out);
-                float x = out * 0.25;
-                float a = abs(x);
-                float x2 = x * x;
-                float y = 1 - 1 / (1 + a + x2 + 0.66422417311781 * x2 * a + 0.36483285408241 * x2 * x2);
-                if (x >= 0)
-                {
-                    out = y;
-                }
-                else
-                {
-                    out = -y;
-                }
-                out = out * 3.0f;
-            }
-            out = (((out * (satDryWet / 100.0f)) + (cleanSig * (1.0f - (satDryWet / 100.0f)))) * juce::Decibels::decibelsToGain(volume));
-
-            //if (makeupGainEngaged)
-            //{
-            //    //Automatic Gain Comp
-            //    makeUpGain = pow(drive, 0.65);
-            //    out /= makeUpGain;
-            //    blockOuput.setSample(channel, sample, out);
-            //}
-
-            //else
-            {
-                blockOuput.setSample(channel, sample, out);
-            }
-        }
-    }
-    oversampling->processSamplesDown(blockInput);
-
-    recDryWetMixer.setWetMixProportion(revDryWet / 100.0f);
-    recDryWetMixer.pushDrySamples(blockInput);
-    convolver.process(juce::dsp::ProcessContextReplacing<float>(blockInput));
-    recDryWetMixer.mixWetSamples(blockInput);
-
-    /* For demonstration 
-    notchFilter.notchFrequency = 50.0f;
-    notchFilter.notchQuality = 0.1f;
-    notchFilter.process(blockInput);
-    */
-
-    // VocalBox
+    
     if (vocalBox != nullptr) {
-        vocalBox->process(&blockInput);
+        vocalBox->process(&block);
     }
->>>>>>> Stashed changes
 }
 
 //==============================================================================

@@ -5,16 +5,41 @@
   <MAINGROUP id="Zm6v1k" name="BraveLvkai">
     <GROUP id="{D6215A89-86C9-F357-2DF2-517A8765738A}" name="Source">
       <GROUP id="{E7DD422C-82E4-D58F-3172-E8F41B2699DF}" name="DSP">
+        <GROUP id="{69235161-23F6-2D04-0B3F-64E6D6711113}" name="audio_fft">
+          <GROUP id="{8D373145-5E71-E1FE-FCBE-0793F58A54E9}" name="AudioFFT">
+            <GROUP id="{8F13D211-8E80-BADF-E355-68DF410A8622}" name="test">
+              <FILE id="vO8Ptq" name="Test.cpp" compile="1" resource="0" file="audio_fft/AudioFFT/test/Test.cpp"/>
+            </GROUP>
+            <FILE id="yFtxvu" name="AudioFFT.cpp" compile="1" resource="0" file="audio_fft/AudioFFT/AudioFFT.cpp"/>
+            <FILE id="abeDUC" name="AudioFFT.h" compile="0" resource="0" file="audio_fft/AudioFFT/AudioFFT.h"/>
+            <FILE id="o4ithL" name="COPYING.txt" compile="0" resource="1" file="audio_fft/AudioFFT/COPYING.txt"/>
+            <FILE id="ec1xsm" name="README.md" compile="0" resource="1" file="audio_fft/AudioFFT/README.md"/>
+          </GROUP>
+          <FILE id="nTK1zl" name="audio_fft.cpp" compile="1" resource="0" file="audio_fft/audio_fft.cpp"/>
+          <FILE id="ZGOj4c" name="audio_fft.h" compile="0" resource="0" file="audio_fft/audio_fft.h"/>
+          <FILE id="nRw3DP" name="audio_fft.mm" compile="1" resource="0" file="audio_fft/audio_fft.mm"/>
+          <FILE id="Hyy55r" name="README.md" compile="0" resource="1" file="audio_fft/README.md"/>
+        </GROUP>
+        <GROUP id="{E9B8211D-6759-45AC-81F0-04965C8BB290}" name="pitch_detector">
+          <GROUP id="{1EB7AA40-C19B-5BDD-059F-5E0EBC940DFD}" name="source">
+            <FILE id="cy3VVn" name="PitchMPM.h" compile="0" resource="0" file="pitch_detector/source/PitchMPM.h"/>
+            <FILE id="WIZk9a" name="PitchYIN.h" compile="0" resource="0" file="pitch_detector/source/PitchYIN.h"/>
+          </GROUP>
+          <FILE id="gojSOZ" name="pitch_detector.cpp" compile="1" resource="0"
+                file="pitch_detector/pitch_detector.cpp"/>
+          <FILE id="pOdEdr" name="pitch_detector.h" compile="0" resource="0"
+                file="pitch_detector/pitch_detector.h"/>
+          <FILE id="SDGW5y" name="pitch_detector.mm" compile="1" resource="0"
+                file="pitch_detector/pitch_detector.mm"/>
+          <FILE id="ZkODiH" name="README.md" compile="0" resource="1" file="pitch_detector/README.md"/>
+        </GROUP>
         <FILE id="lXGOuI" name="Convolution.cpp" compile="1" resource="0" file="Source/DSP/Convolution.cpp"/>
         <FILE id="Jg7kqM" name="Convolution.h" compile="0" resource="0" file="Source/DSP/Convolution.h"/>
         <FILE id="mpvEEX" name="NotchFilter.cpp" compile="1" resource="0" file="Source/DSP/NotchFilter.cpp"/>
         <FILE id="O0y2gu" name="NotchFilter.h" compile="0" resource="0" file="Source/DSP/NotchFilter.h"/>
-<<<<<<< Updated upstream
         <FILE id="H08oLc" name="Saturation.cpp" compile="1" resource="0" file="Source/DSP/Saturation.cpp"/>
         <FILE id="Sb4STv" name="Saturation.h" compile="0" resource="0" file="Source/DSP/Saturation.h"/>
-=======
-        <FILE id="WKkSAL" name="VocalBox.h" compile="0" resource="0" file="Source/DSP/VocalBox.h"/>
->>>>>>> Stashed changes
+        <FILE id="DZK4GO" name="VocalBox.h" compile="0" resource="0" file="Source/DSP/VocalBox.h"/>
       </GROUP>
       <GROUP id="{0E1B1213-42FE-365E-85DB-57E661198E81}" name="Assets">
         <FILE id="VGqd6y" name="GoldenHall.png" compile="0" resource="1" file="Source/Assets/GoldenHall.png"/>

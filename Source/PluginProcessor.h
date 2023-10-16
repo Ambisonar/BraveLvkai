@@ -10,12 +10,9 @@
 
 #include <JuceHeader.h>
 #include "DSP/NotchFilter.h"
-<<<<<<< Updated upstream
 #include "DSP/Saturation.h"
 #include "DSP/Convolution.h"
-=======
 #include "DSP/VocalBox.h"
->>>>>>> Stashed changes
 
 //==============================================================================
 /**
@@ -77,13 +74,8 @@ private:
 
     double makeUpGain;
 
-<<<<<<< Updated upstream
     Saturation saturation;
-	NotchFilter notchFilter;
-=======
-	NotchFilter notchFilter;    // For testing only
     VocalBox* vocalBox;
->>>>>>> Stashed changes
     
     //==============================================================================
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (BraveLvkaiAudioProcessor)
