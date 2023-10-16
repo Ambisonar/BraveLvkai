@@ -101,7 +101,7 @@ void BraveLvkaiAudioProcessor::prepareToPlay (double sampleRate, int samplesPerB
     convolution.prepare(spec);
     ac.prepare(sampleRate, samplesPerBlock);
     vocalBox = new VocalBox();
-    vocalBox->prepare(spec, 10);
+    vocalBox->prepare(spec, 5);
 }
 
 void BraveLvkaiAudioProcessor::releaseResources()
@@ -170,8 +170,8 @@ void BraveLvkaiAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, j
     ac.process(juce::dsp::ProcessContextReplacing<float>(block));
     frequency = ac.getFrequency();
 
-    if (vocalBox != nullptr) {
-        vocalBox->process(&block, frequency);
+    if (vocalBox != nullptr && frequency > 0) {
+        vocalBox->process(block, frequency);
     }
 }
 

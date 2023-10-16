@@ -10,7 +10,6 @@ using EQ = NotchFilter;
 
 class VocalBox
 {
-	juce::dsp::AudioBlock<float>* audioBlock = nullptr;
 	size_t bufferChannel = 1, bufferNumOfSamples = 0;	// Buffer characteristics
 	std::vector<EQ*> notchSeries;
 
@@ -43,11 +42,12 @@ public:
 		InitEQSeries(harmonicPrecision);
 	}
 
-	void ApplyEQ(double& freq) {
+	void ApplyEQ(juce::dsp::AudioBlock<float>& in_audioBlock, double& freq) {
 		for (size_t i = 0; i < notchSeries.size(); ++i) {
 			notchSeries[i]->notchFrequency = freq * (i + 1);
+			if (notchSeries[i]->notchFrequency >= notchSeries[i]->notchSampleRate / 2) break;
 			notchSeries[i]->notchQuality = 10;
-			notchSeries[i]->process(*audioBlock);
+			notchSeries[i]->process(in_audioBlock);
 		}
 	}
 
@@ -56,10 +56,9 @@ public:
 		InitAll(harmonicPrecision);
 	}
 
-	void process(juce::dsp::AudioBlock<float>* in_audioBlock, double& frequency) {
+	void process(juce::dsp::AudioBlock<float>& in_audioBlock, double& frequency) {
 		if (frequency < 8000) {
-			audioBlock = in_audioBlock;
-			ApplyEQ(frequency);
+			ApplyEQ(in_audioBlock, frequency);
 		}
 	}
 };
