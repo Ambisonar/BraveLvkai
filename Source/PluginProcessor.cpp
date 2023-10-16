@@ -22,7 +22,6 @@ BraveLvkaiAudioProcessor::BraveLvkaiAudioProcessor()
                        )
 #endif
 {
-    oversampling.reset(new juce::dsp::Oversampling<float>(2, 2, juce::dsp::Oversampling<float>::filterHalfBandPolyphaseIIR, false));
 }
 
 BraveLvkaiAudioProcessor::~BraveLvkaiAudioProcessor()
@@ -94,25 +93,12 @@ void BraveLvkaiAudioProcessor::changeProgramName (int index, const juce::String&
 //==============================================================================
 void BraveLvkaiAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
 {
-    oversampling->reset();
-    oversampling->initProcessing(static_cast<size_t> (samplesPerBlock));
-
-    juce::dsp::ProcessSpec specOverSampling;
-    specOverSampling.maximumBlockSize = samplesPerBlock * 3;
-    specOverSampling.sampleRate = sampleRate * 4;
-    specOverSampling.numChannels = getTotalNumOutputChannels();
-    highPass.prepare(specOverSampling);
-    lowPass.prepare(specOverSampling);
-    compressor.prepare(specOverSampling);
-
     juce::dsp::ProcessSpec spec;
     spec.maximumBlockSize = samplesPerBlock;
     spec.sampleRate = sampleRate;
     spec.numChannels = getTotalNumOutputChannels();
-    convolver.prepare(spec);
-    convolver.reset();
-    recDryWetMixer.prepare(spec);
-    recDryWetMixer.reset();
+    saturation.prepare(spec);
+    convolution.prepare(spec);
     notchFilter.prepare(spec);
 }
 
@@ -161,136 +147,25 @@ void BraveLvkaiAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, j
     float satDryWet = *apvts.getRawParameterValue("SatDryWet");
     float volume = *apvts.getRawParameterValue("Volume");
     float distortionType = *apvts.getRawParameterValue("DistortionType");
-    //bool makeupGainEngaged = *apvts.getRawParameterValue("AUTOMAKEUPGAIN");
     float revDryWet = *apvts.getRawParameterValue("RevDryWet");
-
-    // Filter
-    highPass.setCutoffFrequency(highPassFreq);
-    lowPass.setCutoffFrequency(lowPassFreq);
-    highPass.setType(juce::dsp::StateVariableTPTFilterType::highpass);
-    lowPass.setType(juce::dsp::StateVariableTPTFilterType::lowpass);
-
-    // Compressor
-    compressor.setAttack(10.0f);
-    compressor.setRelease(50.0f);
-    compressor.setRatio(4.0f);
-    compressor.setThreshold(-4.0f);
-
-    // OverSampling
-    juce::dsp::AudioBlock<float> blockInput(buffer);
-    juce::dsp::AudioBlock<float> blockOuput = oversampling->processSamplesUp(blockInput);
 
     for (auto i = totalNumInputChannels; i < totalNumOutputChannels; ++i)
         buffer.clear(i, 0, buffer.getNumSamples());
 
-    auto audioBlock = juce::dsp::AudioBlock<float>(buffer);
-    auto context = juce::dsp::ProcessContextReplacing<float>(blockOuput);
-    highPass.process(context);
-    lowPass.process(context);
+    juce::dsp::AudioBlock<float> block(buffer);
 
-    //Messy ass signal processing block because it was my first coded plugin 8^/
-    for (int channel = 0; channel < blockOuput.getNumChannels(); channel++)
-    {
-        for (int sample = 0; sample < blockOuput.getNumSamples(); sample++)
-        {
-            float in = blockOuput.getSample(channel, sample);
-            float cleanSig = in;
+    saturation.distortionType = distortionType;
+    saturation.drive = drive;
+    saturation.mix = satDryWet;
+    saturation.volume = volume;
+    saturation.process(block);
 
-            // Distortion Type
-            // Input Gain (Not for Full wave and Half wave rectifier)
-            if (distortionType == 1 || distortionType == 2 || distortionType == 3 || distortionType == 4 || distortionType == 5)
-            {
-                in *= drive;
-            }
-            float out = 0.0f;
-            if (distortionType == 1)
-            {
-                // Simple hard clipping
-                float threshold = 1.0f;
-                if (in > threshold)
-                    out = threshold;
-                else if (in < -threshold)
-                    out = -threshold;
-                else
-                    out = in;
-            }
-            else if (distortionType == 2)
-            {
-                // Soft clipping based on quadratic function
-                float threshold1 = 1.0f / 3.0f;
-                float threshold2 = 2.0f / 3.0f;
-                if (in > threshold2)
-                    out = 1.0f;
-                else if (in > threshold1)
-                    out = (3.0f - (2.0f - 3.0f * in) * (2.0f - 3.0f * in)) / 3.0f;
-                else if (in < -threshold2)
-                    out = -1.0f;
-                else if (in < -threshold1)
-                    out = -(3.0f - (2.0f + 3.0f * in) * (2.0f + 3.0f * in)) / 3.0f;
-                else
-                    out = 2.0f * in;
-            }
-            else if (distortionType == 3)
-            {
-                // Soft clipping based on exponential function
-                if (in > 0)
-                    out = 1.0f - expf(-in);
-                else
-                    out = -1.0f + expf(in);
+    convolution.mix = revDryWet;
+    convolution.process(block);
 
-                out = out * 1.5f;
-            }
-            else if (distortionType == 4)
-            {
-                // ArcTan
-                out = (2.0f / juce::MathConstants<float>::pi) * atan(in);
-            }
-            else if (distortionType == 5)
-            {
-                // tubeIsh Distortion
-                out = compressor.processSample(channel, in);
-
-                out = juce::dsp::FastMathApproximations::tanh(out);
-                float x = out * 0.25;
-                float a = abs(x);
-                float x2 = x * x;
-                float y = 1 - 1 / (1 + a + x2 + 0.66422417311781 * x2 * a + 0.36483285408241 * x2 * x2);
-                if (x >= 0)
-                {
-                    out = y;
-                }
-                else
-                {
-                    out = -y;
-                }
-                out = out * 3.0f;
-            }
-            out = (((out * (satDryWet / 100.0f)) + (cleanSig * (1.0f - (satDryWet / 100.0f)))) * juce::Decibels::decibelsToGain(volume));
-
-            //if (makeupGainEngaged)
-            //{
-            //    //Automatic Gain Comp
-            //    makeUpGain = pow(drive, 0.65);
-            //    out /= makeUpGain;
-            //    blockOuput.setSample(channel, sample, out);
-            //}
-
-            //else
-            {
-                blockOuput.setSample(channel, sample, out);
-            }
-        }
-    }
-    oversampling->processSamplesDown(blockInput);
-
-    recDryWetMixer.setWetMixProportion(revDryWet / 100.0f);
-    recDryWetMixer.pushDrySamples(blockInput);
-    convolver.process(juce::dsp::ProcessContextReplacing<float>(blockInput));
-    recDryWetMixer.mixWetSamples(blockInput);
-
-    notchFilter.notchFrequency = 50.0f;
+    /*notchFilter.notchFrequency = 50.0f;
     notchFilter.notchQuality = 0.1f;
-    notchFilter.process(blockInput);
+    notchFilter.process(block);*/
 }
 
 //==============================================================================
@@ -308,109 +183,17 @@ juce::AudioProcessorEditor* BraveLvkaiAudioProcessor::createEditor()
 //==============================================================================
 void BraveLvkaiAudioProcessor::getStateInformation (juce::MemoryBlock& destData)
 {
-    // You should use this method to store your parameters in the memory block.
-    // You could do that either as raw data, or use the XML or ValueTree classes
-    // as intermediaries to make it easy to save and load complex data.
+    juce::MemoryOutputStream stream(destData, false);
+    apvts.state.writeToStream(stream);
 }
 
 void BraveLvkaiAudioProcessor::setStateInformation (const void* data, int sizeInBytes)
 {
-    // You should use this method to restore your parameters from this memory block,
-    // whose contents will have been created by the getStateInformation() call.
-}
+    juce::ValueTree tree = juce::ValueTree::readFromData(data, sizeInBytes);
 
-void BraveLvkaiAudioProcessor::setIRBufferSize(int newNumChannels, int newNumSamples, bool keepExistingContent, bool clearExtraSpace, bool avoidReallocating)
-{
-    originalIRBuffer.setSize(newNumChannels, newNumSamples, keepExistingContent, clearExtraSpace, avoidReallocating);
-}
-
-juce::AudioBuffer<float>& BraveLvkaiAudioProcessor::getOriginalIR()
-{
-    return originalIRBuffer;
-}
-
-juce::AudioBuffer<float>& BraveLvkaiAudioProcessor::getModifiedIR()
-{
-    return modifiedIRBuffer;
-}
-
-void BraveLvkaiAudioProcessor::loadImpulseResponse()
-{
-    // ¶ÔIRÐÅºÅ½øÐÐ¹éÒ»»¯
-    float globalMaxMagnitude = originalIRBuffer.getMagnitude(0, originalIRBuffer.getNumSamples());
-    originalIRBuffer.applyGain(1.0f / (globalMaxMagnitude + 0.01));
-
-    // ²Ã¼ôIRÇ°ºóµÄ¿Õ°×orÔëÉù²¿·Ö
-    int numSamples = originalIRBuffer.getNumSamples();
-    int blockSize = static_cast<int>(std::floor(this->getSampleRate()) / 100);
-    int startBlockNum = 0;
-    int endBlockNum = numSamples / blockSize;
-
-    // ÕÒµ½IRÐÅºÅÖÐµÚÒ»¸ö´óÓÚ0.001µÄÑù±¾
-    float localMaxMagnitude = 0.0f;
-    while ((startBlockNum + 1) * blockSize < numSamples)
-    {
-        localMaxMagnitude = originalIRBuffer.getMagnitude(startBlockNum * blockSize, blockSize);
-        if (localMaxMagnitude > 0.001)
-        {
-            break;
-        }
-        ++startBlockNum;
+    if (tree.isValid()) {
+        apvts.state = tree;
     }
-
-    // ÕÒµ½IRÐÅºÅÖÐ×îºóÒ»¸ö´óÓÚ0.001µÄÑù±¾
-    localMaxMagnitude = 0.0f;
-    while ((endBlockNum - 1) * blockSize > 0)
-    {
-        --endBlockNum;
-        localMaxMagnitude = originalIRBuffer.getMagnitude(endBlockNum * blockSize, blockSize);
-        // find the time to decay by 60 dB (T60)
-        if (localMaxMagnitude > 0.001)
-        {
-            break;
-        }
-    }
-
-    // ¼ÆËã²Ã¼ôºóµÄIRÐÅºÅ³¤¶È
-    int trimmedNumSamples;
-    // Èç¹ûÎ²²¿ÓÐ²Ã¼ô
-    if (endBlockNum * blockSize < numSamples)
-    {
-        trimmedNumSamples = (endBlockNum - startBlockNum) * blockSize - 1;
-    }
-    else
-    {
-        trimmedNumSamples = numSamples - startBlockNum * blockSize;
-    }
-
-    // ÖØÐÂ¶¨ÒåIRµÄBuffer´óÐ¡
-    modifiedIRBuffer.setSize(originalIRBuffer.getNumChannels(), trimmedNumSamples, false, true, false);
-    // Æ½ÒÆsamples
-    for (int channel = 0; channel < originalIRBuffer.getNumChannels(); ++channel)
-    {
-        for (int sample = 0; sample < trimmedNumSamples; ++sample)
-        {
-            modifiedIRBuffer.setSample(channel, sample, originalIRBuffer.getSample(channel, sample + startBlockNum * blockSize));
-        }
-    }
-
-    // ¸´ÖÆ»ØoriginalIRBuffer
-    originalIRBuffer.makeCopyOf(modifiedIRBuffer);
-
-    // ÉèÖÃdecay time
-    //auto decayTimeParam = apvts.getParameter("DecayTime");
-    //double decayTime = static_cast<double>(trimmedNumSamples) / this->getSampleRate();
-    //decayTimeParam->beginChangeGesture();
-    //decayTimeParam->setValueNotifyingHost(
-    //    decayTimeParam->convertTo0to1(decayTime));
-    //decayTimeParam->endChangeGesture();
-
-    updateImpulseResponse(modifiedIRBuffer);
-}
-
-void BraveLvkaiAudioProcessor::updateImpulseResponse(juce::AudioBuffer<float> irBuffer)
-{
-    convolver.loadImpulseResponse(std::move(irBuffer), this->getSampleRate(), juce::dsp::Convolution::Stereo::yes, juce::dsp::Convolution::Trim::no, juce::dsp::Convolution::Normalise::yes);
 }
 
 juce::AudioProcessorValueTreeState::ParameterLayout BraveLvkaiAudioProcessor::createParameterLayout()
@@ -435,9 +218,6 @@ juce::AudioProcessorValueTreeState::ParameterLayout BraveLvkaiAudioProcessor::cr
         "Volume",
         NormalisableRange<float>(-20.f, 20.f, 0.1f, 1.f), 0.f));
     layout.add(std::make_unique<juce::AudioParameterInt>("DistortionType", "DistortionType", 1, 5, 1));
-    //layout.add(std::make_unique<AudioParameterFloat>(ParameterID{ "DistortionType", 1 },
-    //    "DistortionType",
-    //    NormalisableRange<float>(1.f, 5.f, 1.f, 1.f), 1.f));
 
     layout.add(std::make_unique<AudioParameterFloat>(ParameterID{ "RevDryWet", 1 },
         "RevDryWet",

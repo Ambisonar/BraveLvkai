@@ -79,10 +79,10 @@ void BraveLvkaiAudioProcessorEditor::paint (juce::Graphics& g)
         waveformValues.clear();
         waveformPath.startNewSubPath(15, waveformHeight + 60);
 
-        auto buffer = audioProcessor.getModifiedIR();
+        auto buffer = audioProcessor.convolution.getModifiedIR();
         if (buffer.getNumSamples() < 1)
         {
-            buffer = audioProcessor.getOriginalIR();
+            buffer = audioProcessor.convolution.getOriginalIR();
         }
         const float waveformResolution = 1024.0f;
         const int ratio = static_cast<int>(buffer.getNumSamples() / waveformResolution);
@@ -143,9 +143,9 @@ void BraveLvkaiAudioProcessorEditor::openButtonClicked()
             auto* reader = formatManager.createReaderFor(file);
             if (reader != nullptr)
             {
-                audioProcessor.setIRBufferSize(static_cast<int>(reader->numChannels), static_cast<int>(reader->lengthInSamples));
-                reader->read(&audioProcessor.getOriginalIR(), 0, static_cast<int>(reader->lengthInSamples), 0, true, true);
-                audioProcessor.loadImpulseResponse();
+                audioProcessor.convolution.setIRBufferSize(static_cast<int>(reader->numChannels), static_cast<int>(reader->lengthInSamples));
+                reader->read(&audioProcessor.convolution.getOriginalIR(), 0, static_cast<int>(reader->lengthInSamples), 0, true, true);
+                audioProcessor.convolution.loadImpulseResponse();
 
                 shouldPaintWaveform = true;
                 enableIRParameters = true;
