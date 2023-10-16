@@ -35,7 +35,7 @@ public:
 		for (size_t i = 0; i < steps; ++i) {
 			EQ* new_eq = new EQ;
 			new_eq->prepare(spec);
-			notchSeries.push_back(new EQ);
+			notchSeries.push_back(new_eq);
 		}	
 	}
 
