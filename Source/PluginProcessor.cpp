@@ -93,8 +93,6 @@ void BraveLvkaiAudioProcessor::changeProgramName (int index, const juce::String&
 //==============================================================================
 void BraveLvkaiAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
 {
-    
-
     juce::dsp::ProcessSpec spec;
     spec.maximumBlockSize = samplesPerBlock;
     spec.sampleRate = sampleRate;
@@ -218,9 +216,6 @@ juce::AudioProcessorValueTreeState::ParameterLayout BraveLvkaiAudioProcessor::cr
         "Volume",
         NormalisableRange<float>(-20.f, 20.f, 0.1f, 1.f), 0.f));
     layout.add(std::make_unique<juce::AudioParameterInt>("DistortionType", "DistortionType", 1, 5, 1));
-    //layout.add(std::make_unique<AudioParameterFloat>(ParameterID{ "DistortionType", 1 },
-    //    "DistortionType",
-    //    NormalisableRange<float>(1.f, 5.f, 1.f, 1.f), 1.f));
 
     layout.add(std::make_unique<AudioParameterFloat>(ParameterID{ "RevDryWet", 1 },
         "RevDryWet",
