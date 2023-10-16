@@ -4,17 +4,12 @@
 #include <JuceHeader.h>
 
 #include "DSP/NotchFilter.h"
-#include "../pitch_detector/pitch_detector.h"
 
 // Substitute EQ class alias here
 using EQ = NotchFilter;
 
-using namespace adamski;
-
 class VocalBox
 {
-	void* pitchMPM = nullptr;
-	AudioSampleBuffer* sampleBuffer = nullptr;
 	juce::dsp::AudioBlock<float>* audioBlock = nullptr;
 	size_t bufferChannel = 1, bufferNumOfSamples = 0;	// Buffer characteristics
 	std::vector<EQ*> notchSeries;
@@ -33,15 +28,7 @@ public:
 	VocalBox(){}
 
 	~VocalBox() {
-		delete[] pitchMPM;
-		delete[] sampleBuffer;
 		notchSeries.clear();
-	}
-
-	void InitPitchDetector() {
-		if (pitchMPM != nullptr) delete[] pitchMPM;
-		if (audioBlock != nullptr)
-			pitchMPM = (void*)(new PitchMPM(spec.sampleRate, audioBlock->getNumChannels() * audioBlock->getNumSamples()));
 	}
 
 	void InitEQSeries(size_t steps) {
@@ -53,11 +40,10 @@ public:
 	}
 
 	void InitAll(size_t harmonicPrecision) {
-		InitPitchDetector();
 		InitEQSeries(harmonicPrecision);
 	}
 
-	void ApplyEQ(float& freq) {
+	void ApplyEQ(double& freq) {
 		for (size_t i = 0; i < notchSeries.size(); ++i) {
 			notchSeries[i]->notchFrequency = freq * (i + 1);
 			notchSeries[i]->notchQuality = 10;
@@ -65,35 +51,16 @@ public:
 		}
 	}
 
-	void RefreshAudioBuffer() {
-		if (audioBlock != nullptr)
-		{
-			if (bufferChannel != audioBlock->getNumChannels() || bufferNumOfSamples != audioBlock->getNumSamples()) {
-				delete[] sampleBuffer;
-				bufferChannel = audioBlock->getNumChannels();
-				bufferNumOfSamples = audioBlock->getNumSamples();
-				sampleBuffer = new AudioSampleBuffer(bufferChannel, bufferNumOfSamples);
-			}
-			audioBlock->copyTo(*sampleBuffer);
-			
-		}
-	}
-
-	float GetPitch() {
-		RefreshAudioBuffer();
-		if (sampleBuffer->getNumSamples() == 0) return std::numeric_limits<float>::min();
-		return static_cast<PitchMPM*>(pitchMPM)->getPitch(sampleBuffer->getReadPointer(0));
-	}
-
 	void prepare(juce::dsp::ProcessSpec& in_spec, size_t harmonicPrecision) {
 		spec = in_spec;
 		InitAll(harmonicPrecision);
 	}
 
-	void process(juce::dsp::AudioBlock<float>* in_audioBlock) {
-		audioBlock = in_audioBlock;
-		float baseFreq = GetPitch();
-		ApplyEQ(baseFreq);
+	void process(juce::dsp::AudioBlock<float>* in_audioBlock, double& frequency) {
+		if (frequency < 8000) {
+			audioBlock = in_audioBlock;
+			ApplyEQ(frequency);
+		}
 	}
 };
 

@@ -13,6 +13,7 @@
 #include "DSP/Saturation.h"
 #include "DSP/Convolution.h"
 #include "DSP/VocalBox.h"
+#include "DSP/PitchDetector/autoCorrelation.h"
 
 //==============================================================================
 /**
@@ -75,6 +76,7 @@ private:
     double makeUpGain;
 
     Saturation saturation;
+    AutoCorrelation ac;
     VocalBox* vocalBox;
     
     //==============================================================================
