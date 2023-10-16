@@ -97,22 +97,23 @@ void BraveLvkaiAudioProcessor::prepareToPlay (double sampleRate, int samplesPerB
     oversampling->reset();
     oversampling->initProcessing(static_cast<size_t> (samplesPerBlock));
 
-    juce::dsp::ProcessSpec spec;
-    spec.maximumBlockSize = samplesPerBlock * 3;
-    spec.sampleRate = sampleRate * 4;
-    spec.numChannels = getTotalNumOutputChannels();
-    highPass.prepare(spec);
-    lowPass.prepare(spec);
-    compressor.prepare(spec);
+    juce::dsp::ProcessSpec specOverSampling;
+    specOverSampling.maximumBlockSize = samplesPerBlock * 3;
+    specOverSampling.sampleRate = sampleRate * 4;
+    specOverSampling.numChannels = getTotalNumOutputChannels();
+    highPass.prepare(specOverSampling);
+    lowPass.prepare(specOverSampling);
+    compressor.prepare(specOverSampling);
 
-    juce::dsp::ProcessSpec specConvolver;
-    specConvolver.maximumBlockSize = samplesPerBlock;
-    specConvolver.sampleRate = sampleRate;
-    specConvolver.numChannels = getTotalNumOutputChannels();
-    convolver.prepare(specConvolver);
+    juce::dsp::ProcessSpec spec;
+    spec.maximumBlockSize = samplesPerBlock;
+    spec.sampleRate = sampleRate;
+    spec.numChannels = getTotalNumOutputChannels();
+    convolver.prepare(spec);
     convolver.reset();
-    recDryWetMixer.prepare(specConvolver);
+    recDryWetMixer.prepare(spec);
     recDryWetMixer.reset();
+    notchFilter.prepare(spec);
 }
 
 void BraveLvkaiAudioProcessor::releaseResources()
@@ -286,6 +287,9 @@ void BraveLvkaiAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, j
     recDryWetMixer.pushDrySamples(blockInput);
     convolver.process(juce::dsp::ProcessContextReplacing<float>(blockInput));
     recDryWetMixer.mixWetSamples(blockInput);
+
+    notchFilter.notchFrequency = 50.0f;
+    notchFilter.notchQuality = 0.1f;
 }
 
 //==============================================================================

@@ -9,6 +9,7 @@
 #pragma once
 
 #include <JuceHeader.h>
+#include "DSP/NotchFilter.h"
 
 //==============================================================================
 /**
@@ -82,6 +83,9 @@ private:
     juce::dsp::DryWetMixer<float> recDryWetMixer;
 
     double makeUpGain;
+
+	NotchFilter notchFilter;
+    
     //==============================================================================
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (BraveLvkaiAudioProcessor)
 };
