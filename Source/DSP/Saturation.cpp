@@ -40,9 +40,9 @@ void Saturation::process(juce::dsp::AudioBlock<float>& block)
             float cleanSig = in;
 
             // Distortion Type
-            // Input Gain (Not for Full wave and Half wave rectifier)
             if (distortionType == 1 || distortionType == 2 || distortionType == 3 || distortionType == 4 || distortionType == 5)
             {
+                // Input Gain (Not for Full wave and Half wave rectifier)
                 in *= drive;
             }
             float out = 0.0f;

@@ -101,7 +101,7 @@ void BraveLvkaiAudioProcessor::prepareToPlay (double sampleRate, int samplesPerB
     convolution.prepare(spec);
     ac.prepare(sampleRate, samplesPerBlock);
     vocalBox = new VocalBox();
-    vocalBox->prepare(spec, 5);
+    vocalBox->prepare(spec, 10);
 }
 
 void BraveLvkaiAudioProcessor::releaseResources()
