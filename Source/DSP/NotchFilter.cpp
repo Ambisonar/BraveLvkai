@@ -27,8 +27,6 @@ void NotchFilter::prepare(juce::dsp::ProcessSpec& spec)
     rightChain.prepare(spec);
 
     notchSampleRate = spec.sampleRate;
-
-    updateNotchFilter();
 }
 
 void NotchFilter::process(juce::dsp::AudioBlock<float>& block)
