@@ -9,8 +9,12 @@
         <FILE id="Jg7kqM" name="Convolution.h" compile="0" resource="0" file="Source/DSP/Convolution.h"/>
         <FILE id="mpvEEX" name="NotchFilter.cpp" compile="1" resource="0" file="Source/DSP/NotchFilter.cpp"/>
         <FILE id="O0y2gu" name="NotchFilter.h" compile="0" resource="0" file="Source/DSP/NotchFilter.h"/>
+<<<<<<< Updated upstream
         <FILE id="H08oLc" name="Saturation.cpp" compile="1" resource="0" file="Source/DSP/Saturation.cpp"/>
         <FILE id="Sb4STv" name="Saturation.h" compile="0" resource="0" file="Source/DSP/Saturation.h"/>
+=======
+        <FILE id="WKkSAL" name="VocalBox.h" compile="0" resource="0" file="Source/DSP/VocalBox.h"/>
+>>>>>>> Stashed changes
       </GROUP>
       <GROUP id="{0E1B1213-42FE-365E-85DB-57E661198E81}" name="Assets">
         <FILE id="VGqd6y" name="GoldenHall.png" compile="0" resource="1" file="Source/Assets/GoldenHall.png"/>
