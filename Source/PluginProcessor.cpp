@@ -100,10 +100,7 @@ void BraveLvkaiAudioProcessor::prepareToPlay (double sampleRate, int samplesPerB
     spec.sampleRate = sampleRate;
     spec.numChannels = getTotalNumOutputChannels();
     saturation.prepare(spec);
-    convolver.prepare(spec);
-    convolver.reset();
-    recDryWetMixer.prepare(spec);
-    recDryWetMixer.reset();
+    convolution.prepare(spec);
     notchFilter.prepare(spec);
 }
 
@@ -165,10 +162,8 @@ void BraveLvkaiAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, j
     saturation.volume = volume;
     saturation.process(block);
 
-    recDryWetMixer.setWetMixProportion(revDryWet / 100.0f);
-    recDryWetMixer.pushDrySamples(block);
-    convolver.process(juce::dsp::ProcessContextReplacing<float>(block));
-    recDryWetMixer.mixWetSamples(block);
+    convolution.mix = revDryWet;
+    convolution.process(block);
 
     /*notchFilter.notchFrequency = 50.0f;
     notchFilter.notchQuality = 0.1f;
@@ -199,100 +194,6 @@ void BraveLvkaiAudioProcessor::setStateInformation (const void* data, int sizeIn
 {
     // You should use this method to restore your parameters from this memory block,
     // whose contents will have been created by the getStateInformation() call.
-}
-
-void BraveLvkaiAudioProcessor::setIRBufferSize(int newNumChannels, int newNumSamples, bool keepExistingContent, bool clearExtraSpace, bool avoidReallocating)
-{
-    originalIRBuffer.setSize(newNumChannels, newNumSamples, keepExistingContent, clearExtraSpace, avoidReallocating);
-}
-
-juce::AudioBuffer<float>& BraveLvkaiAudioProcessor::getOriginalIR()
-{
-    return originalIRBuffer;
-}
-
-juce::AudioBuffer<float>& BraveLvkaiAudioProcessor::getModifiedIR()
-{
-    return modifiedIRBuffer;
-}
-
-void BraveLvkaiAudioProcessor::loadImpulseResponse()
-{
-    // ¶ÔIRÐÅºÅ½øÐÐ¹éÒ»»¯
-    float globalMaxMagnitude = originalIRBuffer.getMagnitude(0, originalIRBuffer.getNumSamples());
-    originalIRBuffer.applyGain(1.0f / (globalMaxMagnitude + 0.01));
-
-    // ²Ã¼ôIRÇ°ºóµÄ¿Õ°×orÔëÉù²¿·Ö
-    int numSamples = originalIRBuffer.getNumSamples();
-    int blockSize = static_cast<int>(std::floor(this->getSampleRate()) / 100);
-    int startBlockNum = 0;
-    int endBlockNum = numSamples / blockSize;
-
-    // ÕÒµ½IRÐÅºÅÖÐµÚÒ»¸ö´óÓÚ0.001µÄÑù±¾
-    float localMaxMagnitude = 0.0f;
-    while ((startBlockNum + 1) * blockSize < numSamples)
-    {
-        localMaxMagnitude = originalIRBuffer.getMagnitude(startBlockNum * blockSize, blockSize);
-        if (localMaxMagnitude > 0.001)
-        {
-            break;
-        }
-        ++startBlockNum;
-    }
-
-    // ÕÒµ½IRÐÅºÅÖÐ×îºóÒ»¸ö´óÓÚ0.001µÄÑù±¾
-    localMaxMagnitude = 0.0f;
-    while ((endBlockNum - 1) * blockSize > 0)
-    {
-        --endBlockNum;
-        localMaxMagnitude = originalIRBuffer.getMagnitude(endBlockNum * blockSize, blockSize);
-        // find the time to decay by 60 dB (T60)
-        if (localMaxMagnitude > 0.001)
-        {
-            break;
-        }
-    }
-
-    // ¼ÆËã²Ã¼ôºóµÄIRÐÅºÅ³¤¶È
-    int trimmedNumSamples;
-    // Èç¹ûÎ²²¿ÓÐ²Ã¼ô
-    if (endBlockNum * blockSize < numSamples)
-    {
-        trimmedNumSamples = (endBlockNum - startBlockNum) * blockSize - 1;
-    }
-    else
-    {
-        trimmedNumSamples = numSamples - startBlockNum * blockSize;
-    }
-
-    // ÖØÐÂ¶¨ÒåIRµÄBuffer´óÐ¡
-    modifiedIRBuffer.setSize(originalIRBuffer.getNumChannels(), trimmedNumSamples, false, true, false);
-    // Æ½ÒÆsamples
-    for (int channel = 0; channel < originalIRBuffer.getNumChannels(); ++channel)
-    {
-        for (int sample = 0; sample < trimmedNumSamples; ++sample)
-        {
-            modifiedIRBuffer.setSample(channel, sample, originalIRBuffer.getSample(channel, sample + startBlockNum * blockSize));
-        }
-    }
-
-    // ¸´ÖÆ»ØoriginalIRBuffer
-    originalIRBuffer.makeCopyOf(modifiedIRBuffer);
-
-    // ÉèÖÃdecay time
-    //auto decayTimeParam = apvts.getParameter("DecayTime");
-    //double decayTime = static_cast<double>(trimmedNumSamples) / this->getSampleRate();
-    //decayTimeParam->beginChangeGesture();
-    //decayTimeParam->setValueNotifyingHost(
-    //    decayTimeParam->convertTo0to1(decayTime));
-    //decayTimeParam->endChangeGesture();
-
-    updateImpulseResponse(modifiedIRBuffer);
-}
-
-void BraveLvkaiAudioProcessor::updateImpulseResponse(juce::AudioBuffer<float> irBuffer)
-{
-    convolver.loadImpulseResponse(std::move(irBuffer), this->getSampleRate(), juce::dsp::Convolution::Stereo::yes, juce::dsp::Convolution::Trim::no, juce::dsp::Convolution::Normalise::yes);
 }
 
 juce::AudioProcessorValueTreeState::ParameterLayout BraveLvkaiAudioProcessor::createParameterLayout()
