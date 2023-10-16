@@ -290,6 +290,7 @@ void BraveLvkaiAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, j
 
     notchFilter.notchFrequency = 50.0f;
     notchFilter.notchQuality = 0.1f;
+    notchFilter.process(blockInput);
 }
 
 //==============================================================================
