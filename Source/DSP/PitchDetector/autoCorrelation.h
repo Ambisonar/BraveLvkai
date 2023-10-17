@@ -29,7 +29,7 @@ public:
     
     AutoCorrelation();
     void prepare(double SampleRate, int SampleSize);
-    void process(const juce::dsp::ProcessContextReplacing<float> &context/*, juce::MidiBuffer& midiMessages*/);
+    void process(const juce::dsp::ProcessContextReplacing<float> &context, double& freq);
     
     // return frequency (Robin)
     double getFrequency();
