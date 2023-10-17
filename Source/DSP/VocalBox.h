@@ -3,16 +3,18 @@
 #include <limits>
 #include <JuceHeader.h>
 
-#include "DSP/NotchFilter.h"
+#include "NotchFilter.h"
+#include "PeakFilter.h"
 
 // Substitute EQ class alias here
-using EQ = NotchFilter;
+using EQ = PeakFilter;
 
 class VocalBox
 {
 
 	size_t bufferChannel = 1, bufferNumOfSamples = 0;	// Buffer characteristics
-	std::vector<EQ*> notchSeries;
+	NotchFilter baseFreqNotch;
+	std::vector<EQ*> peakSeries;
 
 public:
 	juce::dsp::ProcessSpec spec;
@@ -28,14 +30,15 @@ public:
 	VocalBox(){}
 
 	~VocalBox() {
-		notchSeries.clear();
+		peakSeries.clear();
 	}
 
 	void InitEQSeries(size_t steps) {
 		for (size_t i = 0; i < steps; ++i) {
 			EQ* new_eq = new EQ;
 			new_eq->prepare(spec);
-			notchSeries.push_back(new_eq);
+			new_eq->peakQuality = 12;
+			peakSeries.push_back(new_eq);
 		}	
 	}
 
@@ -44,11 +47,13 @@ public:
 	}
 	
 	void ApplyEQ(juce::dsp::AudioBlock<float>& in_audioBlock, double& freq) {
-		for (size_t i = 0; i < notchSeries.size(); ++i) {
-			notchSeries[i]->notchFrequency = freq * (i + 1) * 0.5;
-			if (notchSeries[i]->notchFrequency >= notchSeries[i]->notchSampleRate / 2) break;
-			notchSeries[i]->notchQuality = 1.88;
-			notchSeries[i]->process(in_audioBlock);
+		baseFreqNotch.notchFrequency = freq;
+		baseFreqNotch.notchQuality = 1.88;
+		baseFreqNotch.process(in_audioBlock);
+		for (size_t i = 0; i < peakSeries.size(); ++i) {
+			peakSeries[i]->peakFrequency = freq * (i + 2) * 0.5;
+			if (peakSeries[i]->peakFrequency >= peakSeries[i]->peakSampleRate / 2) break;
+			peakSeries[i]->process(in_audioBlock);
 		}
 	}
 

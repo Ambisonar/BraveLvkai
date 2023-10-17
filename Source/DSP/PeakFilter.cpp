@@ -8,13 +8,13 @@
   ==============================================================================
 */
 
-#include "BellFilter.h"
+#include "PeakFilter.h"
 
 PeakFilter::PeakFilter() {}
 
 void PeakFilter::updatePeakFilter()
 {
-    auto peakCoefficients = juce::dsp::IIR::Coefficients<float>::makePeak(peakSampleRate, peakFrequency, peakQuality, peakGain);
+    auto peakCoefficients = juce::dsp::IIR::Coefficients<float>::makePeakFilter(peakSampleRate, peakFrequency, peakQuality, peakGain);
 
     *leftChain.get<ChainPositions::Peak>().coefficients = *peakCoefficients;
     *rightChain.get<ChainPositions::Peak>().coefficients = *peakCoefficients;

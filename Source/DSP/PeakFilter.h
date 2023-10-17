@@ -14,7 +14,7 @@
 class PeakFilter
 {
 public:
-    NotchFilter();
+    PeakFilter();
     void prepare(juce::dsp::ProcessSpec& spec);
     void process(juce::dsp::AudioBlock<float>& block);
 
