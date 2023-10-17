@@ -81,6 +81,12 @@ double AutoCorrelation::getFrequency()
     float thres = 0;    //to determine whether we're in the second local peak region
     bool flag = false;  //flag be true while we get into second local peak region
 
+    if (relaxTick < RELAX_TICK) {
+        ++relaxTick;
+        goto DIRECT_RETURN;
+    }
+    else relaxTick = 0;
+
     for (int k = 0; k < windowSize; ++k)
     {
         ACF_PREV = ACF;
@@ -109,9 +115,15 @@ double AutoCorrelation::getFrequency()
     }
 
     //calculating frequency
-    if (thres <= noiseThres)
+    if (thres <= noiseThres) {
+        prevFreq = -1;
         return -1;
-    return sampleRate / T;
+    }
+
+    prevFreq = sampleRate / T;
+
+    DIRECT_RETURN:
+    return prevFreq;
 }
 
 int AutoCorrelation::findNote(){

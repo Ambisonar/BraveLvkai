@@ -9,10 +9,15 @@
 */
 
 #pragma once
+#define RELAX_TICK 5
+
 #include <JuceHeader.h>
 
 class AutoCorrelation
 {
+    size_t relaxTick = 0;
+    double prevFreq = 0;
+
 public:
     
     int LNL; //least note length

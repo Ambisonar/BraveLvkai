@@ -10,6 +10,7 @@ using EQ = NotchFilter;
 
 class VocalBox
 {
+
 	size_t bufferChannel = 1, bufferNumOfSamples = 0;	// Buffer characteristics
 	std::vector<EQ*> notchSeries;
 
