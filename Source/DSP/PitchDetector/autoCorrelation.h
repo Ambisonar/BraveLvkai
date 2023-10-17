@@ -9,7 +9,7 @@
 */
 
 #pragma once
-#define RELAX_TICK 5
+#define RELAX_TICK 1
 
 #include <JuceHeader.h>
 

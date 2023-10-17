@@ -11,6 +11,8 @@
           <FILE id="STKmRx" name="autoCorrelation.h" compile="0" resource="0"
                 file="Source/DSP/PitchDetector/autoCorrelation.h"/>
         </GROUP>
+        <FILE id="YUkfcR" name="BellFilter.cpp" compile="1" resource="0" file="Source/DSP/BellFilter.cpp"/>
+        <FILE id="tKT4AD" name="BellFilter.h" compile="0" resource="0" file="Source/DSP/BellFilter.h"/>
         <FILE id="lXGOuI" name="Convolution.cpp" compile="1" resource="0" file="Source/DSP/Convolution.cpp"/>
         <FILE id="Jg7kqM" name="Convolution.h" compile="0" resource="0" file="Source/DSP/Convolution.h"/>
         <FILE id="mpvEEX" name="NotchFilter.cpp" compile="1" resource="0" file="Source/DSP/NotchFilter.cpp"/>

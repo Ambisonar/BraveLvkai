@@ -47,7 +47,7 @@ public:
 		for (size_t i = 0; i < notchSeries.size(); ++i) {
 			notchSeries[i]->notchFrequency = freq * (i + 1) * 0.5;
 			if (notchSeries[i]->notchFrequency >= notchSeries[i]->notchSampleRate / 2) break;
-			notchSeries[i]->notchQuality = 1;
+			notchSeries[i]->notchQuality = 1.88;
 			notchSeries[i]->process(in_audioBlock);
 		}
 	}
@@ -58,7 +58,7 @@ public:
 	}
 
 	void process(juce::dsp::AudioBlock<float>& in_audioBlock, double& frequency) {
-		if (frequency < 8000) {
+		if (frequency < 22000) {
 			ApplyEQ(in_audioBlock, frequency);
 		}
 	}
