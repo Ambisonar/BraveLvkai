@@ -38,6 +38,7 @@ public:
 			EQ* new_eq = new EQ;
 			new_eq->prepare(spec);
 			new_eq->peakQuality = 12;
+			new_eq->peakGain = -20;
 			peakSeries.push_back(new_eq);
 		}	
 	}
