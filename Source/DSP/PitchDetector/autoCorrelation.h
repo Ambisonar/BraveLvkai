@@ -15,9 +15,6 @@
 
 class AutoCorrelation
 {
-    size_t relaxTick = 0;
-    double prevFreq = 0;
-
 public:
     
     int LNL; //least note length
@@ -29,7 +26,7 @@ public:
     
     AutoCorrelation();
     void prepare(double SampleRate, int SampleSize);
-    void process(const juce::dsp::ProcessContextReplacing<float> &context, double& freq);
+    void process(const juce::dsp::ProcessContextReplacing<float> &context, double* freq);
     
     // return frequency (Robin)
     double getFrequency();

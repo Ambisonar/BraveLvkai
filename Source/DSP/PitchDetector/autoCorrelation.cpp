@@ -26,7 +26,7 @@ void AutoCorrelation::prepare(double SampleRate, int SampleSize)
     curSample = 0;
 }
 
-void AutoCorrelation::process(const juce::dsp::ProcessContextReplacing<float> &context, double& freq)
+void AutoCorrelation::process(const juce::dsp::ProcessContextReplacing<float> &context, double* freq)
 {
     auto &&inBlock = context.getInputBlock();
     auto *src = inBlock.getChannelPointer(0);
@@ -45,7 +45,7 @@ void AutoCorrelation::process(const juce::dsp::ProcessContextReplacing<float> &c
         */
         //window samples filled done ==> we can find note and make midi message
         if(windowNextFill >= windowSize){
-            freq = getFrequency();
+            *freq = getFrequency();
             
             //windowSamples left shift
             for (int i = 0; i < windowSize - hoppingSize; i++)
@@ -74,11 +74,11 @@ double AutoCorrelation::getFrequency()
     float thres = 0;    //to determine whether we're in the second local peak region
     bool flag = false;  //flag be true while we get into second local peak region
 
-    if (relaxTick < RELAX_TICK) {
-        ++relaxTick;
-        goto DIRECT_RETURN;
-    }
-    else relaxTick = 0;
+    //if (relaxTick < RELAX_TICK) {
+    //    ++relaxTick;
+    //    goto DIRECT_RETURN;
+    //}
+    //else relaxTick = 0;
 
     for (int k = 0; k < windowSize; ++k)
     {
@@ -109,14 +109,11 @@ double AutoCorrelation::getFrequency()
 
     //calculating frequency
     if (thres <= noiseThres) {
-        prevFreq = -1;
         return -1;
     }
 
-    prevFreq = sampleRate / T;
-
-    DIRECT_RETURN:
-    return prevFreq;
+    //DIRECT_RETURN:
+    return sampleRate / T;
 }
 
 int AutoCorrelation::findNote(){

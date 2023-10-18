@@ -101,7 +101,7 @@ void BraveLvkaiAudioProcessor::prepareToPlay (double sampleRate, int samplesPerB
     convolution.prepare(spec);
     ac.prepare(sampleRate, samplesPerBlock);
     vocalBox = new VocalBox();
-    vocalBox->prepare(spec, 100);
+    vocalBox->prepare(spec, 50);
 }
 
 void BraveLvkaiAudioProcessor::releaseResources()
@@ -138,7 +138,7 @@ bool BraveLvkaiAudioProcessor::isBusesLayoutSupported (const BusesLayout& layout
 
 void BraveLvkaiAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midiMessages)
 {
-    static double frequency = 0;
+    double frequency = 0;
 
     juce::ScopedNoDenormals noDenormals;
     auto totalNumInputChannels  = getTotalNumInputChannels();
@@ -167,7 +167,7 @@ void BraveLvkaiAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, j
     convolution.mix = revDryWet;
     convolution.process(block);
     
-    ac.process(juce::dsp::ProcessContextReplacing<float>(block), frequency);
+    ac.process(juce::dsp::ProcessContextReplacing<float>(block), &frequency);
 
     if (vocalBox != nullptr && frequency > 0) {
         vocalBox->process(block, frequency);

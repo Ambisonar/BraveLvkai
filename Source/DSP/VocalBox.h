@@ -34,11 +34,13 @@ public:
 	}
 
 	void InitEQSeries(size_t steps) {
+		baseFreqNotch.prepare(spec);
+
 		for (size_t i = 0; i < steps; ++i) {
 			EQ* new_eq = new EQ;
 			new_eq->prepare(spec);
-			new_eq->peakQuality = 12;
-			new_eq->peakGain = -20;
+			new_eq->peakQuality = 3;
+			new_eq->peakGain = juce::Decibels::decibelsToGain(-60);
 			peakSeries.push_back(new_eq);
 		}	
 	}
@@ -48,11 +50,12 @@ public:
 	}
 	
 	void ApplyEQ(juce::dsp::AudioBlock<float>& in_audioBlock, double& freq) {
+		//if (freq >= baseFreqNotch.notchSampleRate / 2) return;
 		baseFreqNotch.notchFrequency = freq;
 		baseFreqNotch.notchQuality = 1.88;
 		baseFreqNotch.process(in_audioBlock);
 		for (size_t i = 0; i < peakSeries.size(); ++i) {
-			peakSeries[i]->peakFrequency = freq * (i + 2) * 0.5;
+			peakSeries[i]->peakFrequency = freq * (i + 3) * 0.5;
 			if (peakSeries[i]->peakFrequency >= peakSeries[i]->peakSampleRate / 2) break;
 			peakSeries[i]->process(in_audioBlock);
 		}
