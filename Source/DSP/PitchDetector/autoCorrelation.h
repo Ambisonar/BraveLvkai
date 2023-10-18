@@ -15,8 +15,9 @@
 
 class AutoCorrelation
 {
+    size_t relaxFeed = 5;
 public:
-    
+
     int LNL; //least note length
     int function = 0;   // function to find note
     int windowSizePower2 = 12;
