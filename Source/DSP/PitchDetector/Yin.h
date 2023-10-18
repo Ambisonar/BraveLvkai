@@ -21,6 +21,8 @@
 #define PYIN_N_THRESHOLDS 100
 #define PYIN_MIN_THRESHOLD 0.01
 
+using fucking = float;
+
 namespace Yin {
 
 	struct Yin_Result {
@@ -76,12 +78,12 @@ namespace Yin {
 			return std::make_pair(x_adjusted, array[x_adjusted]);
 		}
 
-		static void acorr_r(const std::vector<double>& audio_buffer, Yin::Yin_Result*& fuck)
+		static void acorr_r(fucking* audio_buffer, size_t& size, Yin::Yin_Result*& fuck)
 		{
 			double r = 0;
-			for (size_t tao = 1; tao < audio_buffer.size(); ++tao) {
+			for (size_t tao = 1; tao < size; ++tao) {
 				r = 0;
-				for (size_t j = 0; j < audio_buffer.size(); ++j) {
+				for (size_t j = 0; j < size; ++j) {
 					r += audio_buffer[j] * audio_buffer[j + tao];
 				}
 				fuck->out_real.push_back(r);
@@ -89,9 +91,9 @@ namespace Yin {
 			fuck->N = fuck->out_real.size();
 		}
 
-		static void difference(const std::vector<double>& audio_buffer, Yin::Yin_Result* ya)
+		static void difference(fucking* audio_buffer, size_t& size, Yin::Yin_Result* ya)
 		{
-			acorr_r(audio_buffer, ya);
+			acorr_r(audio_buffer, size, ya);
 
 			for (int tau = 0; tau < ya->N; tau++)
 				ya->yin_buffer[tau] =
@@ -110,7 +112,7 @@ namespace Yin {
 			}
 		}
 
-		static size_t absolute_threshold(const std::vector<double>& yin_buffer)
+		static size_t absolute_threshold(std::vector<double>& yin_buffer)
 		{
 			size_t size = yin_buffer.size();
 			int tau;
@@ -125,52 +127,12 @@ namespace Yin {
 			return (tau == size || yin_buffer[tau] >= YIN_THRESHOLD) ? -1 : tau;
 		}
 
-		static std::vector<std::pair<double, double>>probabilistic_threshold(const std::vector<double>& yin_buffer, int sample_rate)
-		{
-			size_t size = yin_buffer.size();
-			int tau;
-
-			std::map<int, double> t0_with_probability;
-			std::vector<std::pair<double, double>> f0_with_probability;
-
-			double threshold = PYIN_MIN_THRESHOLD;
-
-			for (int n = 0; n < PYIN_N_THRESHOLDS; ++n) {
-				threshold += n * PYIN_MIN_THRESHOLD;
-				for (tau = 2; tau < size; tau++) {
-					if (yin_buffer[tau] < threshold) {
-						while (
-							tau + 1 < size && yin_buffer[tau + 1] < yin_buffer[tau]) {
-							tau++;
-						}
-						break;
-					}
-				}
-				auto a = yin_buffer[tau] < threshold ? 1 : PYIN_PA;
-				t0_with_probability[tau] += a * Beta_Distribution[n];
-			}
-
-			for (auto tau_estimate : t0_with_probability) {
-				auto f0 = (tau_estimate.first != 0)
-					? sample_rate / std::get<0>(parabolic_interpolation(
-						yin_buffer, tau_estimate.first))
-					: -1.0;
-
-				if (f0 != -1.0) {
-					f0_with_probability.push_back(
-						std::make_pair(f0, tau_estimate.second));
-				}
-			}
-
-			return f0_with_probability;
-		}
-
-		static double Pitch(const std::vector<double>& audio_buffer, size_t sample_rate) {
+		static double Pitch(fucking* audio_buffer, size_t& size, size_t sample_rate) {
 			int tau_estimate;
 			
 			rslt = new Yin_Result;
 
-			difference(audio_buffer, rslt);
+			difference(audio_buffer, size, rslt);
 
 			cumulative_mean_normalized_difference(rslt->yin_buffer);
 			tau_estimate = absolute_threshold(rslt->yin_buffer);
