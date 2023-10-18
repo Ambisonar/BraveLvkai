@@ -86,8 +86,13 @@ double AutoCorrelation::getFrequency()
         ACF = 0;
 
         // calculate correlation values
-        for (int n = 0; n < windowSize - k; ++n)
+        for (int n = 0; n < windowSize - k; ++n) {
+            if (windowSamples[n + k] < 2) {
+                ;   // Oh Fuck
+            }
             ACF += windowSamples[n] * windowSamples[n + k];
+        }
+            
 
         //determine thres while k == 0
         if (!k) {

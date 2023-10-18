@@ -19,7 +19,7 @@ public:
     
     int LNL; //least note length
     int function = 0;   // function to find note
-    int windowSizePower2 = 11;
+    int windowSizePower2 = 12;
     int hoppingSize = 1024;
     float correlationThres = 0.6;
     float noiseThres = 0.05f;
