@@ -164,13 +164,12 @@ void BraveLvkaiAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, j
 
     convolution.mix = revDryWet;
     convolution.process(block);
-    
-    ac.process(block, &frequency);
-    /*
-    if (vocalBox != nullptr && frequency > 0) {
+    static double tempFreq = frequency;
+    ac.process(block, &tempFreq);
+    if (tempFreq > 0) {
+        frequency = tempFreq;
         vocalBox->process(block, frequency);
     }
-    */
 }
 
 //==============================================================================

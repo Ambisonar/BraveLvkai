@@ -44,14 +44,7 @@ void AutoCorrelation::process(const juce::dsp::AudioBlock<float> &inBlock, doubl
         */
         //window samples filled done ==> we can find note and make midi message
         if(windowNextFill >= windowSize){
-            int note = -1;
-            if (function == 0)
-                note = findNote();
-            else if (function == 1)
-                note = SIMDfindNote();
-            else
-                note = FFTfindNote();
-            // buildingMidiMessage(note, curSample - 1, midiMessages);
+            *freq = getFrequency();
             
             //windowSamples left shift
             for (int i = 0; i < windowSize - hoppingSize; i++)
