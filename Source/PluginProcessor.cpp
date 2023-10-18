@@ -138,8 +138,6 @@ bool BraveLvkaiAudioProcessor::isBusesLayoutSupported (const BusesLayout& layout
 
 void BraveLvkaiAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midiMessages)
 {
-    static double frequency = 0;
-
     juce::ScopedNoDenormals noDenormals;
     auto totalNumInputChannels  = getTotalNumInputChannels();
     auto totalNumOutputChannels = getTotalNumOutputChannels();

@@ -4,6 +4,10 @@
               addUsingNamespaceToJuceHeader="0" displaySplashScreen="1" jucerFormatVersion="1">
   <MAINGROUP id="Zm6v1k" name="BraveLvkai">
     <GROUP id="{D6215A89-86C9-F357-2DF2-517A8765738A}" name="Source">
+      <GROUP id="{B80F3ECD-44E5-AEC3-6BEB-4A35300B80CA}" name="Components">
+        <FILE id="iKifMK" name="FreqVisual.cpp" compile="1" resource="0" file="Source/Components/FreqVisual.cpp"/>
+        <FILE id="mgR5Y2" name="FreqVisual.h" compile="0" resource="0" file="Source/Components/FreqVisual.h"/>
+      </GROUP>
       <GROUP id="{E7DD422C-82E4-D58F-3172-E8F41B2699DF}" name="DSP">
         <GROUP id="{6B8895D0-B61E-E5A9-FE32-2338D44BAF94}" name="PitchDetector">
           <FILE id="aSvhTw" name="autoCorrelation.cpp" compile="1" resource="0"

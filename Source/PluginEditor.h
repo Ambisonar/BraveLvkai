@@ -13,10 +13,12 @@
 
 #include "CustomStyle.h"
 
+#include "Components/FreqVisual.h"
+
 //==============================================================================
 /**
 */
-class BraveLvkaiAudioProcessorEditor  : public juce::AudioProcessorEditor
+class BraveLvkaiAudioProcessorEditor  : public juce::AudioProcessorEditor, public juce::Timer
 {
 public:
     BraveLvkaiAudioProcessorEditor (BraveLvkaiAudioProcessor&);
@@ -25,6 +27,7 @@ public:
     //==============================================================================
     void paint (juce::Graphics&) override;
     void resized() override;
+    void timerCallback() override;
 
 private:
     // This reference is provided as a quick way for your editor to
@@ -70,6 +73,8 @@ private:
     void createSlider(juce::Slider& slider, juce::String textValueSuffix);
     void createLabel(juce::Label& label, juce::String text,
         juce::Component* slider);
+
+    FreqVisual freqVisual {audioProcessor};
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (BraveLvkaiAudioProcessorEditor)
 };

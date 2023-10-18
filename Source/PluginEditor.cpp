@@ -13,6 +13,10 @@
 BraveLvkaiAudioProcessorEditor::BraveLvkaiAudioProcessorEditor (BraveLvkaiAudioProcessor& p)
     : AudioProcessorEditor (&p), audioProcessor (p)
 {
+    juce::Timer::startTimerHz(60.0f);
+
+    addAndMakeVisible(freqVisual);
+
     // Make sure that before the constructor has finished, you've set the
     // editor's size to whatever you need it to be.
     setSize (800, 400);
@@ -69,7 +73,7 @@ void BraveLvkaiAudioProcessorEditor::paint (juce::Graphics& g)
     g.drawImageAt(mrLin, 350, 200);
 
     //g.setColour(juce::Colour::fromRGB(111, 76, 91));
-    //g.drawFittedText("Naive Instruments", getWidth() - 250 - 15, 15, 250, 20, juce::Justification::centred, 1);
+    //g.drawFittedText(juce::String(audioProcessor.frequency), 280, 100, 250, 20, juce::Justification::centred, 1);
     
     if (shouldPaintWaveform == true) {
         const int waveformWidth = 80 * 3;
@@ -123,6 +127,13 @@ void BraveLvkaiAudioProcessorEditor::resized()
     satDryWetSlider.setBounds(getWidth() - leftRightMargin - dialWidth * 3, getHeight() - topBottomMargin - dialHeight, dialWidth, dialHeight);
     volumeSlider.setBounds(getWidth() - leftRightMargin - dialWidth * 2, getHeight() - topBottomMargin - dialHeight, dialWidth, dialHeight);
     distortionTypeSlider.setBounds(getWidth() - leftRightMargin - dialWidth, getHeight() - topBottomMargin - dialHeight, dialWidth, dialHeight);
+
+    freqVisual.setBounds(280, 100, 250, 20);
+}
+
+void BraveLvkaiAudioProcessorEditor::timerCallback()
+{
+	freqVisual.repaint();
 }
 
 void BraveLvkaiAudioProcessorEditor::openButtonClicked()

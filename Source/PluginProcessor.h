@@ -15,6 +15,8 @@
 #include "DSP/VocalBox.h"
 #include "DSP/PitchDetector/autoCorrelation.h"
 
+#include "DSP/PeakFilter.h"
+
 //==============================================================================
 /**
 */
@@ -67,6 +69,9 @@ public:
     APVTS apvts{ *this, nullptr, "Parameters", createParameterLayout() };
 
     Convolution convolution;
+
+    double frequency = 0;
+
 private:
     juce::dsp::Convolution convolver;
     juce::AudioBuffer<float> originalIRBuffer;
@@ -78,6 +83,8 @@ private:
     Saturation saturation;
     AutoCorrelation ac;
     VocalBox* vocalBox;
+
+    PeakFilter peakFilter;
     
     //==============================================================================
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (BraveLvkaiAudioProcessor)
