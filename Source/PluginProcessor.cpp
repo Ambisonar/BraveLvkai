@@ -142,6 +142,8 @@ void BraveLvkaiAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, j
     auto totalNumInputChannels  = getTotalNumInputChannels();
     auto totalNumOutputChannels = getTotalNumOutputChannels();
 
+    static double tempFreq;
+
     //define parameters in relation to the audio processor value tree state
     float highPassFreq = *apvts.getRawParameterValue("HighPassFreq");
     float lowPassFreq = *apvts.getRawParameterValue("LowPassFreq");
@@ -156,6 +158,16 @@ void BraveLvkaiAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, j
 
     juce::dsp::AudioBlock<float> block(buffer);
 
+    
+    tempFreq = yin.Pitch(buffer.getReadPointer(0), buffer.getNumSamples(), getSampleRate());;
+
+    //ac.process(block, &tempFreq);
+
+    if (tempFreq > 0) {
+        frequency = tempFreq;
+        vocalBox->process(block, frequency);
+    }
+
     saturation.distortionType = distortionType;
     saturation.drive = drive;
     saturation.mix = satDryWet;
@@ -164,17 +176,6 @@ void BraveLvkaiAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, j
 
     convolution.mix = revDryWet;
     convolution.process(block);
-    
-
-    static double tempFreq = frequency;
-
-    ac.process(block, &tempFreq);
-    
-    if (tempFreq > 0) {
-        frequency = tempFreq;
-        vocalBox->process(block, frequency);
-    }
-    
 }
 
 //==============================================================================

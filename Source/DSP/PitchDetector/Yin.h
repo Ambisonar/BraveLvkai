@@ -21,7 +21,7 @@
 #define PYIN_N_THRESHOLDS 100
 #define PYIN_MIN_THRESHOLD 0.01
 
-using fucking = float;
+using fucking = const float;
 
 namespace Yin {
 
@@ -55,7 +55,7 @@ namespace Yin {
 	private:
 		std::vector<double> tempContainer;
 
-		static Yin_Result* rslt;
+		Yin_Result* rslt;
 
 		static std::pair<double, double>parabolic_interpolation(const std::vector<double>& array, int x_)
 		{
@@ -96,8 +96,7 @@ namespace Yin {
 			acorr_r(audio_buffer, size, ya);
 
 			for (int tau = 0; tau < ya->N; tau++)
-				ya->yin_buffer[tau] =
-				ya->out_real[0] + ya->out_real[1] - 2 * ya->out_real[tau];
+				ya->yin_buffer.push_back(ya->out_real[0] + ya->out_real[1] - 2 * ya->out_real[tau]);
 		}
 
 		static void cumulative_mean_normalized_difference(std::vector<double>& yin_buffer)
@@ -127,11 +126,12 @@ namespace Yin {
 			return (tau == size || yin_buffer[tau] >= YIN_THRESHOLD) ? -1 : tau;
 		}
 
-		static double Pitch(fucking* audio_buffer, size_t& size, size_t sample_rate) {
+	public:
+		double Pitch(fucking* audio_buffer, size_t size, size_t sample_rate) {
 			int tau_estimate;
 			
 			rslt = new Yin_Result;
-
+			
 			difference(audio_buffer, size, rslt);
 
 			cumulative_mean_normalized_difference(rslt->yin_buffer);
@@ -141,10 +141,9 @@ namespace Yin {
 				? sample_rate / std::get<0>(parabolic_interpolation(
 					rslt->yin_buffer, tau_estimate))
 				: -1;
-			delete[] rslt;
+			delete rslt;
 			return ret;
 		}
 	};
 
 }
-

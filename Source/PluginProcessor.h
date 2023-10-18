@@ -14,8 +14,7 @@
 #include "DSP/Convolution.h"
 #include "DSP/VocalBox.h"
 #include "DSP/PitchDetector/autoCorrelation.h"
-
-#include "DSP/PeakFilter.h"
+#include "DSP/PitchDetector/Yin.h"
 
 //==============================================================================
 /**
@@ -85,6 +84,8 @@ private:
     VocalBox* vocalBox;
 
     PeakFilter peakFilter;
+
+    Yin::Yin_Pitch yin;
     
     //==============================================================================
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (BraveLvkaiAudioProcessor)
