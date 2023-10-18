@@ -101,7 +101,7 @@ void BraveLvkaiAudioProcessor::prepareToPlay (double sampleRate, int samplesPerB
     convolution.prepare(spec);
     ac.prepare(sampleRate, samplesPerBlock);
     vocalBox = new VocalBox();
-    vocalBox->prepare(spec, 10);
+    vocalBox->prepare(spec, 50);
 }
 
 void BraveLvkaiAudioProcessor::releaseResources()
@@ -164,12 +164,17 @@ void BraveLvkaiAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, j
 
     convolution.mix = revDryWet;
     convolution.process(block);
+    
+
     static double tempFreq = frequency;
+
     ac.process(block, &tempFreq);
+    
     if (tempFreq > 0) {
         frequency = tempFreq;
         vocalBox->process(block, frequency);
     }
+    
 }
 
 //==============================================================================

@@ -45,13 +45,13 @@ public:
 		baseFreqNotch.notchFrequency = freq;
 		baseFreqNotch.notchQuality = 1.88;
 		baseFreqNotch.process(in_audioBlock);
-		/*
+		/**/
 		for (size_t i = 0; i < peakSeries.size(); ++i) {
 			peakSeries[i]->peakFrequency = freq * (i + 3) * 0.5;
 			if (peakSeries[i]->peakFrequency >= peakSeries[i]->peakSampleRate / 2) break;
 			peakSeries[i]->process(in_audioBlock);
 		}
-		*/
+		
 	}
 
 	void prepare(juce::dsp::ProcessSpec& in_spec, size_t harmonicPrecision) {

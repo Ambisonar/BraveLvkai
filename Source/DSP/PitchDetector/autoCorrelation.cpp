@@ -30,6 +30,10 @@ void AutoCorrelation::prepare(double SampleRate, int SampleSize)
 void AutoCorrelation::process(const juce::dsp::AudioBlock<float> &inBlock, double* freq)
 {
     static size_t relaxDog = 0;
+    static double oldFreq = 0, newFreq = 0;
+    static double freqShiftDelta = 0;
+
+
     auto *src = inBlock.getChannelPointer(0);
 
     windowSize = 1 << windowSizePower2;
@@ -47,11 +51,13 @@ void AutoCorrelation::process(const juce::dsp::AudioBlock<float> &inBlock, doubl
         //window samples filled done ==> we can find note and make midi message
         if(windowNextFill >= windowSize){
             if (relaxDog == 0) {
-                *freq = getFrequency();
+                oldFreq = newFreq;
+                newFreq = getFrequency();
+                freqShiftDelta = (newFreq - oldFreq) / relaxFeed;
             }
             if (relaxDog >= relaxFeed) relaxDog = 0;
             else relaxDog++;
-            
+            *freq = relaxDog * freqShiftDelta + oldFreq;
             
             //windowSamples left shift
             for (int i = 0; i < windowSize - hoppingSize; i++)
