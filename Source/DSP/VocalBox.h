@@ -17,36 +17,27 @@ class VocalBox
 	std::vector<EQ*> peakSeries;
 
 public:
-	juce::dsp::ProcessSpec spec;
-
-	VocalBox( 
-		juce::dsp::AudioBlock<float>* blockPtr,		// Pointer to the audio block being analyzed
-		juce::dsp::ProcessSpec& proc_spec,
-		size_t harmonicPrecision					// Specifies how many harmonics being considered
-	) : spec(proc_spec){
-		InitAll(harmonicPrecision);
-	}
-
+	// juce::dsp::ProcessSpec* spec;
 	VocalBox(){}
 
 	~VocalBox() {
 		peakSeries.clear();
 	}
 
-	void InitEQSeries(size_t steps) {
+	void InitEQSeries(size_t steps, juce::dsp::ProcessSpec& spec) {
 		baseFreqNotch.prepare(spec);
 
 		for (size_t i = 0; i < steps; ++i) {
 			EQ* new_eq = new EQ;
 			new_eq->prepare(spec);
 			new_eq->peakQuality = 3;
-			new_eq->peakGain = juce::Decibels::decibelsToGain(-60);
+			new_eq->peakGain = juce::Decibels::decibelsToGain(-20);
 			peakSeries.push_back(new_eq);
 		}	
 	}
 
-	void InitAll(size_t harmonicPrecision) {
-		InitEQSeries(harmonicPrecision);
+	void InitAll(size_t harmonicPrecision, juce::dsp::ProcessSpec& spec) {
+		InitEQSeries(harmonicPrecision, spec);
 	}
 	
 	void ApplyEQ(juce::dsp::AudioBlock<float>& in_audioBlock, double& freq) {
@@ -54,16 +45,17 @@ public:
 		baseFreqNotch.notchFrequency = freq;
 		baseFreqNotch.notchQuality = 1.88;
 		baseFreqNotch.process(in_audioBlock);
+		/*
 		for (size_t i = 0; i < peakSeries.size(); ++i) {
 			peakSeries[i]->peakFrequency = freq * (i + 3) * 0.5;
 			if (peakSeries[i]->peakFrequency >= peakSeries[i]->peakSampleRate / 2) break;
 			peakSeries[i]->process(in_audioBlock);
 		}
+		*/
 	}
 
 	void prepare(juce::dsp::ProcessSpec& in_spec, size_t harmonicPrecision) {
-		spec = in_spec;
-		InitAll(harmonicPrecision);
+		InitAll(harmonicPrecision, in_spec);
 	}
 
 	void process(juce::dsp::AudioBlock<float>& in_audioBlock, double& frequency) {

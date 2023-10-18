@@ -26,7 +26,7 @@ public:
     
     AutoCorrelation();
     void prepare(double SampleRate, int SampleSize);
-    void process(const juce::dsp::ProcessContextReplacing<float> &context, double* freq);
+    void process(const juce::dsp::AudioBlock<float>& inBlock, double* freq);
     
     // return frequency (Robin)
     double getFrequency();

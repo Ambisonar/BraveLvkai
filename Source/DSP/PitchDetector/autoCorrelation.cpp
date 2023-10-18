@@ -26,9 +26,8 @@ void AutoCorrelation::prepare(double SampleRate, int SampleSize)
     curSample = 0;
 }
 
-void AutoCorrelation::process(const juce::dsp::ProcessContextReplacing<float> &context, double* freq)
+void AutoCorrelation::process(const juce::dsp::AudioBlock<float> &inBlock, double* freq)
 {
-    auto &&inBlock = context.getInputBlock();
     auto *src = inBlock.getChannelPointer(0);
 
     windowSize = 1 << windowSizePower2;
@@ -87,8 +86,8 @@ double AutoCorrelation::getFrequency()
 
         // calculate correlation values
         for (int n = 0; n < windowSize - k; ++n) {
-            if (windowSamples[n + k] < 2) {
-                ;   // Oh Fuck
+            if (windowSamples[n] < -2 || windowSamples[n] > 2 || windowSamples[n+k] < -2 || windowSamples[n+k] > 2) {
+                break;   // Oh Fuck
             }
             ACF += windowSamples[n] * windowSamples[n + k];
         }
