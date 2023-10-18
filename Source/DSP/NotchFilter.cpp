@@ -23,8 +23,13 @@ void NotchFilter::updateNotchFilter()
 
 void NotchFilter::prepare(juce::dsp::ProcessSpec& spec)
 {
-    leftChain.prepare(spec);
-    rightChain.prepare(spec);
+    juce::dsp::ProcessSpec monoChainSpec;
+    monoChainSpec.maximumBlockSize = spec.maximumBlockSize;
+    monoChainSpec.numChannels = 1;
+    monoChainSpec.sampleRate = spec.sampleRate;
+
+    leftChain.prepare(monoChainSpec);
+    rightChain.prepare(monoChainSpec);
 
     notchSampleRate = spec.sampleRate;
 }
