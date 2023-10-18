@@ -26,7 +26,7 @@ void AutoCorrelation::prepare(double SampleRate, int SampleSize)
     curSample = 0;
 }
 
-void AutoCorrelation::process(const juce::dsp::ProcessContextReplacing<float> &context, double* freq)
+void AutoCorrelation::process(const juce::dsp::ProcessContextReplacing<float> &context/*, juce::MidiBuffer& midiMessages*/)
 {
     auto &&inBlock = context.getInputBlock();
     auto *src = inBlock.getChannelPointer(0);
@@ -45,7 +45,14 @@ void AutoCorrelation::process(const juce::dsp::ProcessContextReplacing<float> &c
         */
         //window samples filled done ==> we can find note and make midi message
         if(windowNextFill >= windowSize){
-            *freq = getFrequency();
+            int note = -1;
+            if (function == 0)
+                note = findNote();
+            else if (function == 1)
+                note = SIMDfindNote();
+            else
+                note = FFTfindNote();
+            // buildingMidiMessage(note, curSample - 1, midiMessages);
             
             //windowSamples left shift
             for (int i = 0; i < windowSize - hoppingSize; i++)
