@@ -14,6 +14,7 @@
                 file="Source/DSP/PitchDetector/autoCorrelation.cpp"/>
           <FILE id="STKmRx" name="autoCorrelation.h" compile="0" resource="0"
                 file="Source/DSP/PitchDetector/autoCorrelation.h"/>
+          <FILE id="scTvyF" name="Yin.h" compile="0" resource="0" file="Source/DSP/PitchDetector/Yin.h"/>
         </GROUP>
         <FILE id="lXGOuI" name="Convolution.cpp" compile="1" resource="0" file="Source/DSP/Convolution.cpp"/>
         <FILE id="Jg7kqM" name="Convolution.h" compile="0" resource="0" file="Source/DSP/Convolution.h"/>
