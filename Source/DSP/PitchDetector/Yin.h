@@ -22,7 +22,7 @@
 #define PYIN_PA 0.01
 #define PYIN_N_THRESHOLDS 100
 #define PYIN_MIN_THRESHOLD 0.01
-#define RELAX_TIME (50)	// In milliseconds
+#define RELAX_TIME (80)	// In milliseconds
 #define LEVEL_THRESHOLD_IN_DB(A) (20 * log10((A)))
 
 using fucking = const float;
@@ -174,8 +174,15 @@ namespace Yin {
 			threshold = threshold_in_db;
 		}
 
+
 	public:
 		~Yin_Pitch() { if (freqWindow != nullptr) delete freqWindow; }
+
+		void SetBufferSize(size_t _bs) {
+			bufferSize = _bs;
+			relaxFeed = RELAX_TIME / (bufferSize / (double)sampleRate * 1000);
+			freqWindow = new std::vector<double>(relaxFeed, 0.0);
+		}
 
 		void prepare(juce::dsp::ProcessSpec& spec) {
 			bufferSize = spec.maximumBlockSize;

@@ -6,6 +6,8 @@
   ==============================================================================
 */
 
+#define PITCH_BUFFER_SIZE (512)
+
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
 
@@ -26,6 +28,7 @@ BraveLvkaiAudioProcessor::BraveLvkaiAudioProcessor()
 
 BraveLvkaiAudioProcessor::~BraveLvkaiAudioProcessor()
 {
+    if(pitchDetectionBuffer != nullptr) delete[] pitchDetectionBuffer;
 }
 
 //==============================================================================
@@ -99,9 +102,12 @@ void BraveLvkaiAudioProcessor::prepareToPlay (double sampleRate, int samplesPerB
     spec.numChannels = getTotalNumOutputChannels();
     saturation.prepare(spec);
     convolution.prepare(spec);
+    // pitchDetectionBuffer.clear();
+    pitchDetectionBuffer = new float[PITCH_BUFFER_SIZE] {0};
     yin.prepare(spec);
+    yin.SetBufferSize(PITCH_BUFFER_SIZE);
     vocalBox.prepare(spec, 10);
-    pitchDetectionBuffer.clear();
+    
 }
 
 void BraveLvkaiAudioProcessor::releaseResources()
@@ -152,27 +158,33 @@ void BraveLvkaiAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, j
     float volume = *apvts.getRawParameterValue("Volume");
     float distortionType = *apvts.getRawParameterValue("DistortionType");
     float revDryWet = *apvts.getRawParameterValue("RevDryWet");
+    static size_t sampleCounter = 0;
 
     for (auto i = totalNumInputChannels; i < totalNumOutputChannels; ++i)
         buffer.clear(i, 0, buffer.getNumSamples());
 
     juce::dsp::AudioBlock<float> block(buffer);
-
+    /**/
+    
+    auto* sample = buffer.getReadPointer(0);
     for (int i = 0; i < buffer.getNumSamples(); i++)
     {
-        if (sampleCounter < 512)
+        if (sampleCounter < PITCH_BUFFER_SIZE)
         {
-            pitchDetectionBuffer.setSample(0, sampleCounter, buffer.getSample(0, i));
+            // pitchDetectionBuffer.setSample(0, sampleCounter, buffer.getSample(0, i));
+            pitchDetectionBuffer[sampleCounter] = sample[i];
             sampleCounter++;
         }
         else
         {
-            frequency = yin.Pitch(pitchDetectionBuffer.getReadPointer(0));
-            pitchDetectionBuffer.clear();
+            
+            // frequency = yin.Pitch(pitchDetectionBuffer.getReadPointer(0));
+            // pitchDetectionBuffer.clear();
+            frequency = yin.Pitch(pitchDetectionBuffer);
             sampleCounter = 0;
         }
     }
-    //frequency = yin.Pitch(buffer.getReadPointer(0));
+    // frequency = yin.Pitch(buffer.getReadPointer(0));
 
     vocalBox.process(block, frequency);
     
