@@ -16,10 +16,14 @@
 #include <tuple>
 #include <vector>
 
+#include <JuceHeader.h>
+
 #define YIN_THRESHOLD 0.20
 #define PYIN_PA 0.01
 #define PYIN_N_THRESHOLDS 100
 #define PYIN_MIN_THRESHOLD 0.01
+#define RELAX_TIME (50)	// In milliseconds
+#define LEVEL_THRESHOLD_IN_DB(A) (20 * log10((A)))
 
 using fucking = const float;
 
@@ -53,9 +57,16 @@ namespace Yin {
 	class Yin_Pitch {
 
 	private:
-		std::vector<double> tempContainer;
+		size_t bufferSize = 0;
+		size_t sampleRate = 48000;
+		size_t relaxFeed = 5;
+		size_t relaxDog = 0;
 
-		Yin_Result* rslt;
+		std::vector<double>* freqWindow = nullptr;
+
+		Yin_Result* rslt = nullptr;
+
+		double threshold = -60;
 
 		static std::pair<double, double>parabolic_interpolation(const std::vector<double>& array, int x_)
 		{
@@ -123,25 +134,84 @@ namespace Yin {
 					break;
 				}
 			}
-			return (tau == size || yin_buffer[tau] >= YIN_THRESHOLD) ? -1 : tau;
+			if (tau >= size - 1) return -1;
+			return (yin_buffer[tau] >= YIN_THRESHOLD) ? -1 : tau;
+		}
+
+		static void vector_right_shifting(std::vector<double>& vec) {
+			for (size_t i = vec.size() - 1; i > 0; i--) {
+				vec[i] = vec[i - 1];
+			}
+		}
+
+		static void vector_push_left(std::vector<double>& vec, double _in) {
+			vector_right_shifting(vec);
+			vec[0] = _in;
+		}
+
+		static void vector_flush_zero(std::vector<double>& vec) {
+			for (size_t i = 0; i < vec.size(); i++) vec[i] = 0;
+		}
+
+		static void vector_get_average(std::vector<double>& vec, double& _out) {
+			double t = 0;
+			for (size_t i = 0; i < vec.size(); i++) {
+				t += vec[i];
+			}
+			_out = t / vec.size();
+		}
+
+		bool AboveThreshold(fucking* audio_buffer, size_t& size) {
+			double level = 0;
+			for (size_t i = 0; i < size; i++) {
+				level += abs(audio_buffer[i]);
+			}
+			level /= size;
+			return LEVEL_THRESHOLD_IN_DB(level) > threshold;
+		}
+
+		void SetThreshold(double threshold_in_db) {
+			threshold = threshold_in_db;
 		}
 
 	public:
-		double Pitch(fucking* audio_buffer, size_t size, size_t sample_rate) {
+		~Yin_Pitch() { if (freqWindow != nullptr) delete freqWindow; }
+
+		void prepare(juce::dsp::ProcessSpec& spec) {
+			bufferSize = spec.maximumBlockSize;
+			sampleRate = spec.sampleRate;
+			relaxFeed = RELAX_TIME / (bufferSize / (double)sampleRate * 1000);
+			freqWindow = new std::vector<double>(relaxFeed, 0.0);
+		}
+
+		double Pitch(fucking* audio_buffer) {
 			int tau_estimate;
-			
-			rslt = new Yin_Result;
-			
-			difference(audio_buffer, size, rslt);
+			double ret = -1;
 
-			cumulative_mean_normalized_difference(rslt->yin_buffer);
-			tau_estimate = absolute_threshold(rslt->yin_buffer);
+			if (AboveThreshold(audio_buffer, bufferSize)) {
+				// Get new pitch
+				rslt = new Yin_Result;
+				difference(audio_buffer, bufferSize, rslt);
+				cumulative_mean_normalized_difference(rslt->yin_buffer);
+				tau_estimate = absolute_threshold(rslt->yin_buffer);
 
-			auto ret = (tau_estimate != -1)
-				? sample_rate / std::get<0>(parabolic_interpolation(
-					rslt->yin_buffer, tau_estimate))
-				: -1;
-			delete rslt;
+				if (tau_estimate != -1) {
+					ret = sampleRate /
+						std::get<0>(parabolic_interpolation(rslt->yin_buffer, tau_estimate));
+				}
+				else {
+					ret = -1;
+				}
+				delete rslt;
+
+				if (ret > 80 && ret < 3000) {
+					vector_push_left(*freqWindow, ret);
+				}
+				else {
+					vector_push_left(*freqWindow, freqWindow->data()[0]);
+				}
+				vector_get_average(*freqWindow, ret);
+			}
 			return ret;
 		}
 	};

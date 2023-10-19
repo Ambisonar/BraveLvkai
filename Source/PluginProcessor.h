@@ -81,7 +81,7 @@ private:
 
     Saturation saturation;
     AutoCorrelation ac;
-    VocalBox* vocalBox;
+    VocalBox vocalBox;
 
     PeakFilter peakFilter;
 

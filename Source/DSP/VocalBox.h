@@ -42,6 +42,7 @@ public:
 	
 	void ApplyEQ(juce::dsp::AudioBlock<float>& in_audioBlock, double& freq) {
 		//if (freq >= baseFreqNotch.notchSampleRate / 2) return;
+		if (freq <= 0) return;
 		baseFreqNotch.notchFrequency = freq;
 		baseFreqNotch.notchQuality = 1.88;
 		baseFreqNotch.process(in_audioBlock);

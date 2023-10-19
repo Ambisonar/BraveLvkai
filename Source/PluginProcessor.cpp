@@ -99,9 +99,8 @@ void BraveLvkaiAudioProcessor::prepareToPlay (double sampleRate, int samplesPerB
     spec.numChannels = getTotalNumOutputChannels();
     saturation.prepare(spec);
     convolution.prepare(spec);
-    ac.prepare(sampleRate, samplesPerBlock);
-    vocalBox = new VocalBox();
-    vocalBox->prepare(spec, 50);
+    yin.prepare(spec);
+    vocalBox.prepare(spec, 10);
 }
 
 void BraveLvkaiAudioProcessor::releaseResources()
@@ -157,17 +156,10 @@ void BraveLvkaiAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, j
         buffer.clear(i, 0, buffer.getNumSamples());
 
     juce::dsp::AudioBlock<float> block(buffer);
+    frequency = yin.Pitch(buffer.getReadPointer(0));
 
+    vocalBox.process(block, frequency);
     
-    tempFreq = yin.Pitch(buffer.getReadPointer(0), buffer.getNumSamples(), getSampleRate());;
-
-    //ac.process(block, &tempFreq);
-
-    if (tempFreq > 0) {
-        frequency = tempFreq;
-        vocalBox->process(block, frequency);
-    }
-
     saturation.distortionType = distortionType;
     saturation.drive = drive;
     saturation.mix = satDryWet;
