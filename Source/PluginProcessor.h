@@ -86,6 +86,9 @@ private:
     PeakFilter peakFilter;
 
     Yin::Yin_Pitch yin;
+
+    juce::AudioBuffer<float> pitchDetectionBuffer{ 1, 512 };
+    int sampleCounter = 0;
     
     //==============================================================================
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (BraveLvkaiAudioProcessor)

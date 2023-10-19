@@ -101,6 +101,7 @@ void BraveLvkaiAudioProcessor::prepareToPlay (double sampleRate, int samplesPerB
     convolution.prepare(spec);
     yin.prepare(spec);
     vocalBox.prepare(spec, 10);
+    pitchDetectionBuffer.clear();
 }
 
 void BraveLvkaiAudioProcessor::releaseResources()
@@ -156,7 +157,22 @@ void BraveLvkaiAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, j
         buffer.clear(i, 0, buffer.getNumSamples());
 
     juce::dsp::AudioBlock<float> block(buffer);
-    frequency = yin.Pitch(buffer.getReadPointer(0));
+
+    for (int i = 0; i < buffer.getNumSamples(); i++)
+    {
+        if (sampleCounter < 512)
+        {
+            pitchDetectionBuffer.setSample(0, sampleCounter, buffer.getSample(0, i));
+            sampleCounter++;
+        }
+        else
+        {
+            frequency = yin.Pitch(pitchDetectionBuffer.getReadPointer(0));
+            pitchDetectionBuffer.clear();
+            sampleCounter = 0;
+        }
+    }
+    //frequency = yin.Pitch(buffer.getReadPointer(0));
 
     vocalBox.process(block, frequency);
     
