@@ -103,7 +103,7 @@ void BraveLvkaiAudioProcessor::prepareToPlay (double sampleRate, int samplesPerB
     saturation.prepare(spec);
     convolution.prepare(spec);
     // pitchDetectionBuffer.clear();
-    pitchDetectionBuffer = new float[PITCH_BUFFER_SIZE] {0};
+    pitchDetectionBuffer = new float[PITCH_BUFFER_SIZE * 2] {0};
     yin.prepare(spec);
     yin.SetBufferSize(PITCH_BUFFER_SIZE);
     vocalBox.prepare(spec, 10);
@@ -149,6 +149,7 @@ void BraveLvkaiAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, j
     auto totalNumOutputChannels = getTotalNumOutputChannels();
 
     static double tempFreq;
+    static bool ifFirstLoad = true;
 
     //define parameters in relation to the audio processor value tree state
     float highPassFreq = *apvts.getRawParameterValue("HighPassFreq");
@@ -169,19 +170,44 @@ void BraveLvkaiAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, j
     auto* sample = buffer.getReadPointer(0);
     for (int i = 0; i < buffer.getNumSamples(); i++)
     {
-        if (sampleCounter < PITCH_BUFFER_SIZE)
-        {
-            // pitchDetectionBuffer.setSample(0, sampleCounter, buffer.getSample(0, i));
-            pitchDetectionBuffer[sampleCounter] = sample[i];
-            sampleCounter++;
+        if (ifFirstLoad) {
+            if (sampleCounter < PITCH_BUFFER_SIZE * 2)
+            {
+                // pitchDetectionBuffer.setSample(0, sampleCounter, buffer.getSample(0, i));
+                pitchDetectionBuffer[sampleCounter] = sample[i];
+                sampleCounter++;
+            }
+            else
+            {
+
+                // frequency = yin.Pitch(pitchDetectionBuffer.getReadPointer(0));
+                // pitchDetectionBuffer.clear();
+                frequency = yin.Pitch(pitchDetectionBuffer);
+                sampleCounter = 0;
+                ifFirstLoad = false;
+            }
         }
-        else
-        {
-            
-            // frequency = yin.Pitch(pitchDetectionBuffer.getReadPointer(0));
-            // pitchDetectionBuffer.clear();
-            frequency = yin.Pitch(pitchDetectionBuffer);
-            sampleCounter = 0;
+        else {
+            if (sampleCounter < PITCH_BUFFER_SIZE)
+            {
+                if (sampleCounter == 0) {
+                    // Shift data
+                    for (size_t j = 0; j < PITCH_BUFFER_SIZE; ++j) {
+                        pitchDetectionBuffer[j] = pitchDetectionBuffer[j + PITCH_BUFFER_SIZE];
+                    }
+                }
+                // pitchDetectionBuffer.setSample(0, sampleCounter, buffer.getSample(0, i));
+                pitchDetectionBuffer[sampleCounter + PITCH_BUFFER_SIZE] = sample[i];
+                sampleCounter++;
+            }
+            else
+            {
+
+                // frequency = yin.Pitch(pitchDetectionBuffer.getReadPointer(0));
+                // pitchDetectionBuffer.clear();
+                frequency = yin.Pitch(pitchDetectionBuffer);
+                sampleCounter = 0;
+            }
         }
     }
     // frequency = yin.Pitch(buffer.getReadPointer(0));
