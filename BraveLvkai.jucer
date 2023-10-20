@@ -4,6 +4,9 @@
               addUsingNamespaceToJuceHeader="0" displaySplashScreen="1" jucerFormatVersion="1">
   <MAINGROUP id="Zm6v1k" name="BraveLvkai">
     <GROUP id="{D6215A89-86C9-F357-2DF2-517A8765738A}" name="Source">
+      <GROUP id="{A74B5E06-4F46-64CB-F1AE-6B686B4646E8}" name="Utils">
+        <FILE id="ZD4Uer" name="WavReader.h" compile="0" resource="0" file="Source/Utils/WavReader.h"/>
+      </GROUP>
       <GROUP id="{B80F3ECD-44E5-AEC3-6BEB-4A35300B80CA}" name="Components">
         <FILE id="iKifMK" name="FreqVisual.cpp" compile="1" resource="0" file="Source/Components/FreqVisual.cpp"/>
         <FILE id="mgR5Y2" name="FreqVisual.h" compile="0" resource="0" file="Source/Components/FreqVisual.h"/>

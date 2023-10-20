@@ -25,6 +25,8 @@ public:
     void loadImpulseResponse();
     void updateImpulseResponse(juce::AudioBuffer<float> irBuffer);
 
+    int getCurrentIRSize();
+
     float mix{ 0 };
 
 private:

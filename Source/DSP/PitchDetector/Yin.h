@@ -22,7 +22,7 @@
 #define PYIN_PA 0.01
 #define PYIN_N_THRESHOLDS 100
 #define PYIN_MIN_THRESHOLD 0.01
-#define RELAX_TIME (100)	// In milliseconds
+#define RELAX_TIME (50)	// In milliseconds
 #define LEVEL_THRESHOLD_IN_DB(A) (20 * log10((A)))
 
 using fucking = const float;

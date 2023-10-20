@@ -10,7 +10,11 @@
 
 #include "Convolution.h"
 
-Convolution::Convolution() {}
+Convolution::Convolution() 
+{
+    originalIRBuffer.clear();
+    modifiedIRBuffer.clear();
+}
 
 void Convolution::prepare(juce::dsp::ProcessSpec& spec)
 {
@@ -113,4 +117,9 @@ void Convolution::loadImpulseResponse()
 void Convolution::updateImpulseResponse(juce::AudioBuffer<float> irBuffer)
 {
     convolver.loadImpulseResponse(std::move(irBuffer), sampleRate, juce::dsp::Convolution::Stereo::yes, juce::dsp::Convolution::Trim::no, juce::dsp::Convolution::Normalise::yes);
+}
+
+int Convolution::getCurrentIRSize()
+{
+    return convolver.getCurrentIRSize();
 }

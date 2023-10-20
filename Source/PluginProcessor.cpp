@@ -171,44 +171,44 @@ void BraveLvkaiAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, j
 
     juce::dsp::AudioBlock<float> block(buffer);
 
-    secondaryBuffer.makeCopyOf(buffer);
+    //secondaryBuffer.makeCopyOf(buffer);
 
-    for (int i = 0; i < buffer.getNumSamples(); i++)
-    {
-        if (ifFirstLoad) {
-            if (sampleCounter < PITCH_BUFFER_SIZE * 2)
-            {
-                pitchDetectionBuffer[sampleCounter] = sample[i];
-                sampleCounter++;
-            }
-            else
-            {
-                frequency = yin.Pitch(pitchDetectionBuffer);
-                sampleCounter = 0;
-                ifFirstLoad = false;
-            }
-        }
-        else {
-            if (sampleCounter < PITCH_BUFFER_SIZE)
-            {
-                if (sampleCounter == 0) {
-                    // Shift data
-                    for (size_t j = 0; j < PITCH_BUFFER_SIZE; ++j) {
-                        pitchDetectionBuffer[j] = pitchDetectionBuffer[j + PITCH_BUFFER_SIZE];
-                    }
-                }
-                pitchDetectionBuffer[sampleCounter + PITCH_BUFFER_SIZE] = sample[i];
-                sampleCounter++;
-            }
-            else
-            {
-                frequency = yin.Pitch(pitchDetectionBuffer);
-                sampleCounter = 0;
-            }
-        }
-    }
+    //for (int i = 0; i < buffer.getNumSamples(); i++)
+    //{
+    //    if (ifFirstLoad) {
+    //        if (sampleCounter < PITCH_BUFFER_SIZE * 2)
+    //        {
+    //            pitchDetectionBuffer[sampleCounter] = sample[i];
+    //            sampleCounter++;
+    //        }
+    //        else
+    //        {
+    //            frequency = yin.Pitch(pitchDetectionBuffer);
+    //            sampleCounter = 0;
+    //            ifFirstLoad = false;
+    //        }
+    //    }
+    //    else {
+    //        if (sampleCounter < PITCH_BUFFER_SIZE)
+    //        {
+    //            if (sampleCounter == 0) {
+    //                // Shift data
+    //                for (size_t j = 0; j < PITCH_BUFFER_SIZE; ++j) {
+    //                    pitchDetectionBuffer[j] = pitchDetectionBuffer[j + PITCH_BUFFER_SIZE];
+    //                }
+    //            }
+    //            pitchDetectionBuffer[sampleCounter + PITCH_BUFFER_SIZE] = sample[i];
+    //            sampleCounter++;
+    //        }
+    //        else
+    //        {
+    //            frequency = yin.Pitch(pitchDetectionBuffer);
+    //            sampleCounter = 0;
+    //        }
+    //    }
+    //}
 
-    vocalBox.process(block, frequency);
+    //vocalBox.process(block, frequency);
     
     //block -= secondaryBuffer;
 
@@ -218,8 +218,13 @@ void BraveLvkaiAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, j
     saturation.volume = volume;
     saturation.process(block);
 
-    convolution.mix = revDryWet;
-    convolution.process(block);
+    int caonima = convolution.getCurrentIRSize();
+
+    //if (convolution.getCurrentIRSize() != 1)
+    //{
+        convolution.mix = revDryWet;
+        convolution.process(block);
+    //}
 }
 
 //==============================================================================
