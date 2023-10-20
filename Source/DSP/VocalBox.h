@@ -7,7 +7,8 @@
 #include "PeakFilter.h"
 
 // Substitute EQ class alias here
-using EQ = PeakFilter;
+ using EQ = PeakFilter;
+// using EQ = NotchFilter;
 
 class VocalBox
 {
@@ -27,11 +28,11 @@ public:
 	void InitEQSeries(size_t steps, juce::dsp::ProcessSpec& spec) {
 		baseFreqNotch.prepare(spec);
 
-		for (size_t i = 0; i < steps; ++i) {
+		for (size_t i = 0; i < steps - 1; ++i) {
 			EQ* new_eq = new EQ;
 			new_eq->prepare(spec);
-			new_eq->peakQuality = 3;
-			new_eq->peakGain = juce::Decibels::decibelsToGain(-20);
+			new_eq->peakQuality = 15;
+			new_eq->peakGain = juce::Decibels::decibelsToGain(-30.0f);
 			peakSeries.push_back(new_eq);
 		}	
 	}
@@ -41,7 +42,6 @@ public:
 	}
 	
 	void ApplyEQ(juce::dsp::AudioBlock<float>& in_audioBlock, double& freq) {
-		//if (freq >= baseFreqNotch.notchSampleRate / 2) return;
 		if (freq <= 0) return;
 		baseFreqNotch.notchFrequency = freq;
 		baseFreqNotch.notchQuality = 1.88;
@@ -60,7 +60,7 @@ public:
 	}
 
 	void process(juce::dsp::AudioBlock<float>& in_audioBlock, double& frequency) {
-		if (frequency < 22000) {
+		if (frequency < 3000 && frequency > 0) {
 			ApplyEQ(in_audioBlock, frequency);
 		}
 	}

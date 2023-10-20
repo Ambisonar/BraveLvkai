@@ -150,6 +150,7 @@ void BraveLvkaiAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, j
 
     static double tempFreq;
     static bool ifFirstLoad = true;
+    static juce::AudioBuffer<float> secondaryBuffer;
 
     //define parameters in relation to the audio processor value tree state
     float highPassFreq = *apvts.getRawParameterValue("HighPassFreq");
@@ -164,24 +165,24 @@ void BraveLvkaiAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, j
     for (auto i = totalNumInputChannels; i < totalNumOutputChannels; ++i)
         buffer.clear(i, 0, buffer.getNumSamples());
 
-    juce::dsp::AudioBlock<float> block(buffer);
-    /**/
-    
+    // if (ifFirstLoad) prevBuffer.makeCopyOf(buffer);
+
     auto* sample = buffer.getReadPointer(0);
+
+    juce::dsp::AudioBlock<float> block(buffer);
+
+    secondaryBuffer.makeCopyOf(buffer);
+
     for (int i = 0; i < buffer.getNumSamples(); i++)
     {
         if (ifFirstLoad) {
             if (sampleCounter < PITCH_BUFFER_SIZE * 2)
             {
-                // pitchDetectionBuffer.setSample(0, sampleCounter, buffer.getSample(0, i));
                 pitchDetectionBuffer[sampleCounter] = sample[i];
                 sampleCounter++;
             }
             else
             {
-
-                // frequency = yin.Pitch(pitchDetectionBuffer.getReadPointer(0));
-                // pitchDetectionBuffer.clear();
                 frequency = yin.Pitch(pitchDetectionBuffer);
                 sampleCounter = 0;
                 ifFirstLoad = false;
@@ -196,24 +197,21 @@ void BraveLvkaiAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, j
                         pitchDetectionBuffer[j] = pitchDetectionBuffer[j + PITCH_BUFFER_SIZE];
                     }
                 }
-                // pitchDetectionBuffer.setSample(0, sampleCounter, buffer.getSample(0, i));
                 pitchDetectionBuffer[sampleCounter + PITCH_BUFFER_SIZE] = sample[i];
                 sampleCounter++;
             }
             else
             {
-
-                // frequency = yin.Pitch(pitchDetectionBuffer.getReadPointer(0));
-                // pitchDetectionBuffer.clear();
                 frequency = yin.Pitch(pitchDetectionBuffer);
                 sampleCounter = 0;
             }
         }
     }
-    // frequency = yin.Pitch(buffer.getReadPointer(0));
 
     vocalBox.process(block, frequency);
     
+    //block -= secondaryBuffer;
+
     saturation.distortionType = distortionType;
     saturation.drive = drive;
     saturation.mix = satDryWet;

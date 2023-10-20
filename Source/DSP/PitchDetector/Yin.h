@@ -22,7 +22,7 @@
 #define PYIN_PA 0.01
 #define PYIN_N_THRESHOLDS 100
 #define PYIN_MIN_THRESHOLD 0.01
-#define RELAX_TIME (80)	// In milliseconds
+#define RELAX_TIME (100)	// In milliseconds
 #define LEVEL_THRESHOLD_IN_DB(A) (20 * log10((A)))
 
 using fucking = const float;
@@ -181,14 +181,12 @@ namespace Yin {
 		void SetBufferSize(size_t _bs) {
 			bufferSize = _bs;
 			relaxFeed = RELAX_TIME / (bufferSize / (double)sampleRate * 1000);
-			freqWindow = new std::vector<double>(relaxFeed, 0.0);
+			freqWindow = new std::vector<double>(relaxFeed, 440.0);
 		}
 
 		void prepare(juce::dsp::ProcessSpec& spec) {
-			bufferSize = spec.maximumBlockSize;
 			sampleRate = spec.sampleRate;
-			relaxFeed = RELAX_TIME / (bufferSize / (double)sampleRate * 1000);
-			freqWindow = new std::vector<double>(relaxFeed, 0.0);
+			SetBufferSize(spec.maximumBlockSize);
 		}
 
 		double Pitch(fucking* audio_buffer) {
@@ -211,7 +209,7 @@ namespace Yin {
 				}
 				delete rslt;
 
-				if (ret > 80 && ret < 3000) {
+				if (ret > 20 && ret < 3000) {
 					vector_push_left(*freqWindow, ret);
 				}
 				else {
